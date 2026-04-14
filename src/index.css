@@ -1816,7 +1816,7 @@ label {
 /* ===== EMPLOYEE TABLE V2 (7 columns with Services Assigned) ===== */
 .employee-list-table-v2 .list-header,
 .employee-list-table-v2 .list-row {
-  grid-template-columns: 40px 1.2fr 1fr 1.8fr 1fr 1fr 120px;
+  grid-template-columns: 40px 1.2fr 1fr 2fr 1.2fr 120px;
   min-width: 960px;
 }
 

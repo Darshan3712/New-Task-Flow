@@ -30,7 +30,7 @@ export default function LoginPage({ isSuperAdmin }) {
     <div className="login-bg">
       <div className="login-card">
         <div className="login-logo">
-          <img src="/logo.png" alt="TaskFlow Logo" className="login-main-logo" />
+          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="TaskFlow Logo" className="login-main-logo" />
         </div>
 
         {!isSuperAdmin && (

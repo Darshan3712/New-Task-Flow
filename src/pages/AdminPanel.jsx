@@ -551,30 +551,7 @@ export default function AdminPanel() {
                     />
                   </div>
                 </div>
-                {/* Row 3: Setup Employee Permissions */}
-                <div className="form-row form-row-3" style={{ background: 'var(--bg)', padding: '1rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', marginTop: '0.5rem' }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                      <input type="checkbox" checked={empCanCreateTasks} onChange={e => setEmpCanCreateTasks(e.target.checked)} style={{ cursor: 'pointer' }} />
-                      Can Create Tasks
-                    </label>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem', marginLeft: '1.5rem' }}>Allow employee to add new tasks</div>
-                  </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                      <input type="checkbox" checked={empReadOnlyTasks} onChange={e => setEmpReadOnlyTasks(e.target.checked)} style={{ cursor: 'pointer' }} />
-                      Read-only Access
-                    </label>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem', marginLeft: '1.5rem' }}>Disable editing existing task details</div>
-                  </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                      <input type="checkbox" checked={empCanComment} onChange={e => setEmpCanComment(e.target.checked)} style={{ cursor: 'pointer' }} />
-                      Can Comment
-                    </label>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem', marginLeft: '1.5rem' }}>Allow chatting in client requests</div>
-                  </div>
-                </div>
+                {/* Employee Permissions section removed per user request */}
                 {empMsg && <div className="form-msg">{empMsg}</div>}
                 <button type="submit" className="btn-add">
                   <FiPlus /> Add Employee
@@ -595,7 +572,7 @@ export default function AdminPanel() {
                       <span>Designation</span>
                       <span>Services Assigned</span>
                       <span>Username/Password</span>
-                      <span>Permissions</span>
+                      {/* Permissions column removed */}
                       <span>Action</span>
                     </div>
                     {employees.map((emp, i) => (
@@ -648,22 +625,7 @@ export default function AdminPanel() {
                             <input type="text" value={empEditData.username} onChange={(e) => setEmpEditData({ ...empEditData, username: e.target.value })} style={{ width: '100%', padding: '0.3rem' }} />
                             <input type="text" value={empEditData.password} onChange={(e) => setEmpEditData({ ...empEditData, password: e.target.value })} style={{ width: '100%', padding: '0.3rem' }} />
                           </span>
-                          <span>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', padding: '0.5rem 0', background: 'transparent', borderRadius: '6px' }}>
-                              <label style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                <input type="checkbox" checked={empEditData.canCreateTasks !== false} onChange={e => setEmpEditData({ ...empEditData, canCreateTasks: e.target.checked })} />
-                                Can Create Tasks
-                              </label>
-                              <label style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                <input type="checkbox" checked={empEditData.readOnlyAccess === true} onChange={e => setEmpEditData({ ...empEditData, readOnlyAccess: e.target.checked })} />
-                                Read-Only Access
-                              </label>
-                              <label style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                <input type="checkbox" checked={empEditData.canComment !== false} onChange={e => setEmpEditData({ ...empEditData, canComment: e.target.checked })} />
-                                Can Comment
-                              </label>
-                            </div>
-                          </span>
+                            {/* Permissions checkboxes removed */}
                           <span style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
                             <button className="btn-add" style={{ padding: '0.35rem 0.75rem', margin: 0 }} onClick={() => { updateEmployee(emp.id, empEditData); setEditingEmpId(null); setIsEmpEditServicesOpen(false); }}>Save</button>
                             <button className="btn-delete" style={{ border: '1.5px solid var(--border)', color: 'var(--text-muted)', background: 'transparent' }} onClick={() => { setEditingEmpId(null); setIsEmpEditServicesOpen(false); }}>Cancel</button>
@@ -689,11 +651,7 @@ export default function AdminPanel() {
                             <span style={{ fontSize: '0.85rem' }}>{emp.username}</span>
                             <span className="emp-password-cell">{emp.password}</span>
                           </span>
-                          <span style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                            <span style={{ fontSize: '0.75rem', color: emp.canCreateTasks !== false ? 'var(--accent)' : 'var(--text-muted)' }}>{emp.canCreateTasks !== false ? '✓ Create Tasks' : '✕ No Task Create'}</span>
-                            <span style={{ fontSize: '0.75rem', color: emp.readOnlyAccess ? 'var(--text-muted)' : 'var(--accent)' }}>{emp.readOnlyAccess ? '✓ Read-Only' : '✓ Full Edit'}</span>
-                            <span style={{ fontSize: '0.75rem', color: emp.canComment !== false ? 'var(--accent)' : 'var(--text-muted)' }}>{emp.canComment !== false ? '✓ Comments' : '✕ No Comments'}</span>
-                          </span>
+                          {/* Permissions display cell removed */}
                           <span style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                             <button
                               className="btn-action-edit"

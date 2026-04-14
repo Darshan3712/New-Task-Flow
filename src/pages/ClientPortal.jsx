@@ -95,7 +95,7 @@ export default function ClientPortal() {
       <header className="app-header">
         <div className="header-left">
           <div className="header-logo">
-            <img src="/New_Logo.png" alt="TaskFlow" className="app-main-logo" />
+            <img src={`${import.meta.env.BASE_URL}New_Logo.png`} alt="TaskFlow" className="app-main-logo" />
           </div>
         </div>
         
