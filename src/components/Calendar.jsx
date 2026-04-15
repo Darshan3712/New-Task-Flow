@@ -99,7 +99,8 @@ function MasterCalendar({ month, year, serviceIds = [] }) {
     if (clientTasks) {
       let filteredClientTasks = clientTasks.filter(ct => {
         if (!ct.assignedEmployeeId) return false; // Ignore unassigned client tasks in calendar grid
-        const effectiveDate = ct.assignedDate || ct.requiredBy;
+        // Strictly place the task in the cell the Admin assigned it to:
+        const effectiveDate = ct.assignedDate;
         return effectiveDate === dateStr;
       });
 
@@ -198,8 +199,8 @@ function MasterCalendar({ month, year, serviceIds = [] }) {
                           className="day-task-entry"
                           title={project.name}
                         >
-                          <span className="day-task-title">{isClientTask ? '📩 ' : ''}{project.name}</span>
                           <span className={`day-status-dot status-dot-${task.status} inline-status-dot`} />
+                          <span className="day-task-title">{isClientTask ? '📩 ' : ''}{project.name}</span>
                         </div>
                       ))}
                       {overflowCount > 0 && (
@@ -260,10 +261,11 @@ function MasterCalendar({ month, year, serviceIds = [] }) {
                             <div
                               key={task.id || ti}
                               className={`master-sidebar-task-item ${sidebarSelectedTask?.id === task.id ? 'active' : ''}`}
+                              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'flex-start' }}
                               onClick={() => { setSidebarSelectedProject(key); setSidebarSelectedTask(task); }}
                             >
+                              <span style={{ width: 8, height: 8, borderRadius: '50%', background: m.color, display: 'inline-block', flexShrink: 0 }} />
                               <span>{isClientTask ? '📩 ' : ''}{task.title || '(Untitled)'}</span>
-                              <span style={{ width: 8, height: 8, borderRadius: '50%', background: m.color, display: 'inline-block', marginLeft: '0.5rem', flexShrink: 0 }} />
                             </div>
                           );
                         })}
@@ -358,6 +360,14 @@ function MasterCalendar({ month, year, serviceIds = [] }) {
                         {/* Required By */}
                         {(detail.requiredBy || detail.assignedDate) && (
                           <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', paddingTop: '0.75rem', borderTop: '1px solid var(--border)' }}>
+                            {detail.assignedDate && (
+                              <div>
+                                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem' }}>🗓 Assigned For</div>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>
+                                  {new Date(detail.assignedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </div>
+                              </div>
+                            )}
                             {detail.requiredBy && (
                               <div>
                                 <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem' }}>📅 Required By</div>
@@ -366,11 +376,11 @@ function MasterCalendar({ month, year, serviceIds = [] }) {
                                 </div>
                               </div>
                             )}
-                            {detail.assignedDate && (
+                            {(detail.createdAt) && (
                               <div>
-                                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem' }}>📌 Assigned Date</div>
+                                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem' }}>📌 Submitted On</div>
                                 <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>
-                                  {new Date(detail.assignedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                  {new Date(detail.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                                 </div>
                               </div>
                             )}
@@ -421,7 +431,13 @@ export default function Calendar({ projectId, month, year, serviceIds = [], isMa
 
   const getDayTasks = (day) => {
     if (!day) return [];
-    const allTasks = getTasks(projectId, getDateStr(year, month, day));
+    let allTasks = getTasks(projectId, getDateStr(year, month, day));
+
+    // For employees: only show tasks they are assigned to
+    if (currentUser?.role === 'employee') {
+      allTasks = allTasks.filter(t => t.employeeIds && t.employeeIds.includes(currentUser.id));
+    }
+
     if (serviceIds && serviceIds.length > 0) {
       return allTasks.filter(t => {
         const tServices = t.serviceIds || [];
@@ -442,15 +458,20 @@ export default function Calendar({ projectId, month, year, serviceIds = [], isMa
       const effectiveDate = ct.assignedDate || ct.requiredBy;
       if (!effectiveDate) return false;
       if (effectiveDate !== dateStr) return false;
-      // For employees: show all their assigned client tasks (regardless of project selection)
-      if (currentUser?.role === 'employee') {
-        return ct.assignedEmployeeId === currentUser.id;
-      }
-      // For admin/superadmin: match project and optional service filter
+
+      // Enforce project filter for ALL roles
       if (ct.projectId !== projectId) return false;
+
+      // For employees: only show their own assignments
+      if (currentUser?.role === 'employee') {
+        if (ct.assignedEmployeeId !== currentUser.id) return false;
+      }
+      
+      // Enforce service filter if any services are selected
       if (serviceIds && serviceIds.length > 0) {
         if (!serviceIds.includes(ct.serviceId)) return false;
       }
+      
       return true;
     });
   };
@@ -502,8 +523,8 @@ export default function Calendar({ projectId, month, year, serviceIds = [], isMa
                             setActiveClientTaskId(null);
                           }}
                         >
-                          <span className="day-task-title" title={t.title}>{t.title}</span>
                           <span className={`day-status-dot status-dot-${t.status} inline-status-dot`}></span>
+                          <span className="day-task-title" title={t.title}>{t.title}</span>
                         </div>
                       ))}
                       {dayClientTasks.map((ct) => (
@@ -518,8 +539,8 @@ export default function Calendar({ projectId, month, year, serviceIds = [], isMa
                             setActiveTaskId(null);
                           }}
                         >
-                          <span className="day-task-title">📩 {ct.title}</span>
                           <span className={`day-status-dot status-dot-${ct.status} inline-status-dot`}></span>
+                          <span className="day-task-title">📩 {ct.title}</span>
                         </div>
                       ))}
                     </div>

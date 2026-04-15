@@ -44,7 +44,7 @@ export function DataProvider({ children }) {
           api.getClientTasks(),
           api.getSystemSettings()
         ]);
-        setProjects(p);
+        setProjects(p.filter(proj => (currentUser.assignedProjectIds || []).includes(proj.id)));
         setEmployees(e);
         setServices(s);
         setTasks(tMap || {});
@@ -175,9 +175,9 @@ export function DataProvider({ children }) {
   };
 
   // ── Employees ─────────────────────────────────────────────────────────────
-  const addEmployee = async (name, username, password, designation, assignedServiceIds = [], permissions = {}) => {
+  const addEmployee = async (name, username, password, designation, assignedServiceIds = [], assignedProjectIds = [], permissions = {}) => {
     const emp = await api.createEmployee({
-      name, username, password, designation, assignedServiceIds,
+      name, username, password, designation, assignedServiceIds, assignedProjectIds,
       canCreateTasks: permissions.canCreateTasks !== false,
       readOnlyAccess: permissions.readOnlyAccess === true,
       canComment: permissions.canComment !== false,

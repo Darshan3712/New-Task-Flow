@@ -240,7 +240,7 @@ export default function TaskPopup({ projectId, dateStr, headerServiceIds = [], a
                   gray:   { label: 'Pending',     color: '#6b7280' },
                   yellow: { label: 'In Progress', color: '#f59e0b' },
                   green:  { label: 'Completed',   color: '#10b981' },
-                  red:    { label: 'Revision',    color: '#ef4444' },
+                  red:    { label: 'Not Done',    color: '#ef4444' },
                 };
                 const assignedEmp = employees.find(e => e.id === ct.assignedEmployeeId);
                 const assignedSvc = services.find(s => s.id === ct.serviceId);
@@ -370,10 +370,21 @@ function TaskEntry({ task, index, employees, services, updateField, onToggleEmp,
     ? services.filter(s => headerServiceIds.includes(s.id))
     : services;
 
-  // Filter employees by task's selected services (if services are chosen)
-  const filteredEmployees = (task.serviceIds && task.serviceIds.length > 0)
+  // Filter employees:
+  // 1. If task has selected services, only show employees assigned to those services.
+  // 2. If task has NO services selected, but Dashboard Header has services selected,
+  //    show employees assigned to the header services.
+  // 3. Otherwise (All Services), show all employees.
+  let effectiveServiceIds = [];
+  if (task.serviceIds && task.serviceIds.length > 0) {
+    effectiveServiceIds = task.serviceIds;
+  } else if (headerServiceIds && headerServiceIds.length > 0) {
+    effectiveServiceIds = headerServiceIds;
+  }
+
+  const filteredEmployees = effectiveServiceIds.length > 0
     ? employees.filter(emp =>
-        (emp.assignedServiceIds || []).some(sid => task.serviceIds.includes(sid))
+        (emp.assignedServiceIds || []).some(sid => effectiveServiceIds.includes(sid))
       )
     : employees;
 
@@ -452,7 +463,9 @@ function TaskEntry({ task, index, employees, services, updateField, onToggleEmp,
                       <div className="no-emp-hint">
                         {(task.serviceIds && task.serviceIds.length > 0)
                           ? 'No employees assigned to the selected services.'
-                          : 'No employees available.'}
+                          : (headerServiceIds && headerServiceIds.length > 0)
+                            ? 'No employees assigned to the dashboard service filter.'
+                            : 'No employees available.'}
                       </div>
                     ) : (
                       filteredEmployees.map(emp => (

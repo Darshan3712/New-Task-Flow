@@ -4,10 +4,10 @@ import { useData } from '../contexts/DataContext';
 import { FiCalendar, FiSend, FiPlus, FiClock, FiX } from 'react-icons/fi';
 
 const STATUS_META = {
-  gray:   { label: 'Pending',    color: '#6b7280' },
+  gray:   { label: 'Pending',     color: '#6b7280' },
   yellow: { label: 'In Progress', color: '#f59e0b' },
-  green:  { label: 'Completed',  color: '#10b981' },
-  red:    { label: 'Revision',   color: '#ef4444' },
+  green:  { label: 'Completed',   color: '#10b981' },
+  red:    { label: 'Not Done',    color: '#ef4444' },
 };
 
 const MONTHS = [
@@ -240,12 +240,7 @@ export default function ClientPortal() {
                           👤 Assigned to: <strong>{assignedEmp.name}</strong>
                         </span>
                       )}
-                      {!assignedEmp && task.status === 'green' && (
-                        <span className="ctc-meta-item" style={{ color: '#10b981' }}>✅ Assignment completed</span>
-                      )}
-                      {!assignedEmp && task.status !== 'green' && (
-                        <span className="ctc-meta-item ctc-unassigned">⏳ Awaiting assignment</span>
-                      )}
+
                     </div>
 
                     <div className="ctc-footer">
@@ -310,7 +305,6 @@ export default function ClientPortal() {
 
             {/* Comment input */}
             <div style={{ padding: '0.75rem 1.5rem', borderTop: '1px solid var(--border)' }}>
-              {liveSelectedTask.assignedEmployeeId ? (
                 <div className="comment-input-row">
                   <input
                     type="text"
@@ -322,9 +316,6 @@ export default function ClientPortal() {
                   />
                   <button onClick={handleSendComment}><FiSend size={14} /></button>
                 </div>
-              ) : (
-                <p style={{ color: 'var(--text-dim)', fontStyle: 'italic', fontSize: '0.8rem', textAlign: 'center' }}>Comments will be available once your task is assigned to a team member.</p>
-              )}
             </div>
           </div>
         </div>

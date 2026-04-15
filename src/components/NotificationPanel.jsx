@@ -7,7 +7,7 @@ const STATUS_META = {
   gray:   { label: 'Pending',     color: '#6b7280' },
   yellow: { label: 'In Progress', color: '#f59e0b' },
   green:  { label: 'Completed',   color: '#10b981' },
-  red:    { label: 'Revision',    color: '#ef4444' },
+  red:    { label: 'Not Done',    color: '#ef4444' },
 };
 
 export default function NotificationPanel({ onClose }) {

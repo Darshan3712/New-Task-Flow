@@ -987,7 +987,7 @@ label {
 .day-task-entry {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 0.4rem;
   padding: 0.15rem 0.25rem;
   margin-top: 2px;
@@ -1038,9 +1038,10 @@ label {
 .inline-status-dot {
   width: 8px;
   height: 8px;
-  margin-left: 6px;
+  margin-left: 0;
   display: inline-block;
   vertical-align: middle;
+  flex-shrink: 0;
 }
 
 /* Cell background based on status */
@@ -1544,11 +1545,10 @@ label {
 }
 
 /* Employee Table Specific (6 columns) */
-.employee-list-table .list-header,
-.employee-list-table .list-row {
-  grid-template-columns: 40px 1.2fr 1.2fr 1fr 1fr 60px;
-  min-width: 800px;
-  /* Ensure 6-column structure is stable */
+.employee-list-table-v2 .list-header,
+.employee-list-table-v2 .list-row {
+  grid-template-columns: 40px minmax(180px, 1.2fr) minmax(150px, 1fr) minmax(150px, 1fr) minmax(130px, 1fr) 90px;
+  min-width: 900px;
 }
 
 
@@ -1562,7 +1562,7 @@ label {
 /* Service Table Specific */
 .service-list-table .list-header,
 .service-list-table .list-row {
-  grid-template-columns: 40px minmax(180px, auto) 1fr 120px;
+  grid-template-columns: 40px 38% 1fr 120px;
   min-width: 600px;
 }
 
@@ -1654,6 +1654,30 @@ label {
   color: var(--text);
   height: 40px !important;
   box-sizing: border-box;
+}
+
+/* Compact dropdown inside table inline-edit rows */
+.list-row .dropdown-trigger,
+.list-row .header-select {
+  height: auto !important;
+  min-height: 32px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+/* Consistent Save/Cancel button sizing inside table edit rows */
+.list-row .btn-add {
+  padding: 0.3rem 0.7rem !important;
+  font-size: 0.8rem !important;
+  min-height: 30px !important;
+  margin: 0 !important;
+}
+
+.list-row .btn-delete {
+  padding: 0.3rem 0.7rem !important;
+  font-size: 0.8rem !important;
+  min-height: 30px !important;
+  min-width: auto !important;
 }
 
 .dropdown-trigger:hover,
@@ -1811,6 +1835,34 @@ label {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ===== GRADIENT TAGS ===== */
+.selected-tags-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.gradient-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.gradient-tag {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.gradient-tag.sm {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
 }
 
 /* ===== EMPLOYEE TABLE V2 (7 columns with Services Assigned) ===== */

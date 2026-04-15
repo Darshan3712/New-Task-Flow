@@ -51,6 +51,11 @@ export default function AdminPanel() {
   const [isEmpServicesOpen, setIsEmpServicesOpen] = useState(false);
   const [empServicesSearch, setEmpServicesSearch] = useState('');
   const empServicesRef = useRef(null);
+  
+  const [empAssignedProjectIds, setEmpAssignedProjectIds] = useState([]);
+  const [isEmpProjectsOpen, setIsEmpProjectsOpen] = useState(false);
+  const [empProjectsSearch, setEmpProjectsSearch] = useState('');
+  const empProjectsRef = useRef(null);
 
   // ── Service form state ──────────────────────────────────────────────────
   const [serviceName, setServiceName] = useState('');
@@ -61,10 +66,14 @@ export default function AdminPanel() {
 
   // ── Employee edit state ─────────────────────────────────────────────────
   const [editingEmpId, setEditingEmpId] = useState(null);
-  const [empEditData, setEmpEditData] = useState({ name: '', designation: '', username: '', password: '', assignedServiceIds: [], canCreateTasks: true, readOnlyAccess: false, canComment: true });
+  const [empEditData, setEmpEditData] = useState({ name: '', designation: '', username: '', password: '', assignedServiceIds: [], assignedProjectIds: [], canCreateTasks: true, readOnlyAccess: false, canComment: true });
   const [isEmpEditServicesOpen, setIsEmpEditServicesOpen] = useState(false);
   const [empEditServicesSearch, setEmpEditServicesSearch] = useState('');
   const empEditServicesRef = useRef(null);
+
+  const [isEmpEditProjectsOpen, setIsEmpEditProjectsOpen] = useState(false);
+  const [empEditProjectsSearch, setEmpEditProjectsSearch] = useState('');
+  const empEditProjectsRef = useRef(null);
 
   // ── Admin form state (superadmin only) ─────────────────────────────────
   const [adminName, setAdminName] = useState('');
@@ -89,8 +98,14 @@ export default function AdminPanel() {
       if (empServicesRef.current && !empServicesRef.current.contains(event.target)) {
         setIsEmpServicesOpen(false);
       }
+      if (empProjectsRef.current && !empProjectsRef.current.contains(event.target)) {
+        setIsEmpProjectsOpen(false);
+      }
       if (empEditServicesRef.current && !empEditServicesRef.current.contains(event.target)) {
         setIsEmpEditServicesOpen(false);
+      }
+      if (empEditProjectsRef.current && !empEditProjectsRef.current.contains(event.target)) {
+        setIsEmpEditProjectsOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -142,6 +157,13 @@ export default function AdminPanel() {
     setEmpServicesSearch('');
   };
 
+  const toggleEmpProject = (id) => {
+    setEmpAssignedProjectIds((prev) =>
+      prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id]
+    );
+    setEmpProjectsSearch('');
+  };
+
   const handleAddEmployee = (e) => {
     e.preventDefault();
     if (!empName.trim() || !empUsername.trim() || !empPassword.trim()) return;
@@ -151,7 +173,7 @@ export default function AdminPanel() {
       setTimeout(() => setEmpMsg(''), 3000);
       return;
     }
-    addEmployee(empName.trim(), empUsername.trim(), empPassword.trim(), empDesignation.trim(), empAssignedServiceIds, {
+    addEmployee(empName.trim(), empUsername.trim(), empPassword.trim(), empDesignation.trim(), empAssignedServiceIds, empAssignedProjectIds, {
       canCreateTasks: empCanCreateTasks,
       readOnlyAccess: empReadOnlyTasks,
       canComment: empCanComment
@@ -161,6 +183,7 @@ export default function AdminPanel() {
     setEmpUsername('');
     setEmpPassword('');
     setEmpAssignedServiceIds([]);
+    setEmpAssignedProjectIds([]);
     setEmpCanCreateTasks(true);
     setEmpReadOnlyTasks(false);
     setEmpCanComment(true);
@@ -473,6 +496,84 @@ export default function AdminPanel() {
                     />
                   </div>
                   <div className="form-group">
+                    <label>Projects Assigned</label>
+                    <div className="multi-select-container" ref={empProjectsRef}>
+                      <div
+                        className={`dropdown-trigger searchable ${isEmpProjectsOpen ? 'active' : ''}`}
+                        onClick={() => setIsEmpProjectsOpen(true)}
+                        style={{ background: 'var(--bg)' }}
+                      >
+                        <input
+                          type="text"
+                          className="dropdown-search-input"
+                          placeholder={empAssignedProjectIds.length === 0 ? "Select projects..." : `${empAssignedProjectIds.length} Selected`}
+                          value={empProjectsSearch}
+                          onChange={(e) => {
+                            setEmpProjectsSearch(e.target.value);
+                            setIsEmpProjectsOpen(true);
+                          }}
+                          onFocus={() => setIsEmpProjectsOpen(true)}
+                        />
+                        <FiChevronDown className="trigger-icon" />
+                      </div>
+                      {isEmpProjectsOpen && (
+                        <div className="dropdown-menu">
+                          {projects.length === 0 ? (
+                            <div className="no-emp-hint">No projects added yet.</div>
+                          ) : (
+                            projects
+                              .filter(p => p.name.toLowerCase().includes(empProjectsSearch.toLowerCase()))
+                              .map((p) => (
+                                <label
+                                  key={p.id}
+                                  className={`emp-checkbox-item ${empAssignedProjectIds.includes(p.id) ? 'checked' : ''}`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={empAssignedProjectIds.includes(p.id)}
+                                    onChange={() => toggleEmpProject(p.id)}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                  <span className="emp-check-name">{p.name}</span>
+                                </label>
+                              ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {empAssignedProjectIds.length > 0 && (
+                      <div className="selected-tags-preview" style={{ marginTop: '0.4rem' }}>
+                        {empAssignedProjectIds.map(id => {
+                          const p = projects.find(prj => prj.id === id);
+                          return p ? <span key={id} className="gradient-tag sm">{p.name}</span> : null;
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {/* Row 2: 3 columns — Username | Password | Services */}
+                <div className="form-row form-row-3">
+                  <div className="form-group">
+                    <label>Username *</label>
+                    <input
+                      type="text"
+                      value={empUsername}
+                      onChange={(e) => setEmpUsername(e.target.value)}
+                      placeholder="e.g. rahul.sharma"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Password *</label>
+                    <input
+                      type="text"
+                      value={empPassword}
+                      onChange={(e) => setEmpPassword(e.target.value)}
+                      placeholder="Set password"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
                     <label>Services Assigned</label>
                     <div className="multi-select-container" ref={empServicesRef}>
                       <div
@@ -528,29 +629,6 @@ export default function AdminPanel() {
                     )}
                   </div>
                 </div>
-                {/* Row 2: 2 columns — Username | Password */}
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Username *</label>
-                    <input
-                      type="text"
-                      value={empUsername}
-                      onChange={(e) => setEmpUsername(e.target.value)}
-                      placeholder="e.g. rahul.sharma"
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Password *</label>
-                    <input
-                      type="text"
-                      value={empPassword}
-                      onChange={(e) => setEmpPassword(e.target.value)}
-                      placeholder="Set password"
-                      required
-                    />
-                  </div>
-                </div>
                 {/* Employee Permissions section removed per user request */}
                 {empMsg && <div className="form-msg">{empMsg}</div>}
                 <button type="submit" className="btn-add">
@@ -569,7 +647,7 @@ export default function AdminPanel() {
                     <div className="list-header">
                       <span>#</span>
                       <span>Employee Name</span>
-                      <span>Designation</span>
+                      <span>Projects</span>
                       <span>Services Assigned</span>
                       <span>Username/Password</span>
                       {/* Permissions column removed */}
@@ -580,8 +658,49 @@ export default function AdminPanel() {
                         // ── Inline edit row ──
                         <div className="list-row" key={emp.id}>
                           <span>{i + 1}</span>
-                          <span><input type="text" value={empEditData.name} onChange={(e) => setEmpEditData({ ...empEditData, name: e.target.value })} style={{ width: '100%', padding: '0.3rem' }} /></span>
-                          <span><input type="text" value={empEditData.designation} onChange={(e) => setEmpEditData({ ...empEditData, designation: e.target.value })} style={{ width: '100%', padding: '0.3rem' }} /></span>
+                          <span style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            <input type="text" value={empEditData.name} onChange={(e) => setEmpEditData({ ...empEditData, name: e.target.value })} style={{ width: '100%', padding: '0.3rem' }} placeholder="Name" />
+                            <input type="text" value={empEditData.designation} onChange={(e) => setEmpEditData({ ...empEditData, designation: e.target.value })} style={{ width: '100%', padding: '0.3rem' }} placeholder="Designation" />
+                          </span>
+                          <span>
+                            <div className="multi-select-container" ref={empEditProjectsRef}>
+                              <div
+                                className={`dropdown-trigger searchable ${isEmpEditProjectsOpen ? 'active' : ''}`}
+                                onMouseDown={(e) => { e.preventDefault(); setIsEmpEditProjectsOpen(v => !v); }}
+                                style={{ padding: '0.1rem 0.5rem', minHeight: '32px' }}
+                              >
+                                <input
+                                  type="text"
+                                  className="dropdown-search-input sm"
+                                  placeholder={`${(empEditData.assignedProjectIds || []).length} Selected`}
+                                  value={empEditProjectsSearch}
+                                  onChange={(e) => { setEmpEditProjectsSearch(e.target.value); setIsEmpEditProjectsOpen(true); }}
+                                  onFocus={() => setIsEmpEditProjectsOpen(true)}
+                                  style={{ fontSize: '0.75rem' }}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                />
+                                <FiChevronDown className="trigger-icon" style={{ fontSize: '0.7rem' }} />
+                              </div>
+                              {isEmpEditProjectsOpen && (
+                                <div className="dropdown-menu" onMouseDown={(e) => e.stopPropagation()}>
+                                  {projects.filter(p => p.name.toLowerCase().includes(empEditProjectsSearch.toLowerCase())).map((p) => (
+                                    <label key={p.id} className={`emp-checkbox-item ${(empEditData.assignedProjectIds || []).includes(p.id) ? 'checked' : ''}`}>
+                                      <input
+                                        type="checkbox"
+                                        checked={(empEditData.assignedProjectIds || []).includes(p.id)}
+                                        onChange={() => setEmpEditData(prev => {
+                                          const ids = prev.assignedProjectIds || [];
+                                          return { ...prev, assignedProjectIds: ids.includes(p.id) ? ids.filter(x => x !== p.id) : [...ids, p.id] };
+                                        })}
+                                        onClick={(e) => e.stopPropagation()}
+                                      />
+                                      <span className="emp-check-name" style={{ fontSize: '0.75rem' }}>{p.name}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </span>
                           <span>
                             <div className="multi-select-container" ref={empEditServicesRef}>
                               <div
@@ -627,16 +746,28 @@ export default function AdminPanel() {
                           </span>
                             {/* Permissions checkboxes removed */}
                           <span style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                            <button className="btn-add" style={{ padding: '0.35rem 0.75rem', margin: 0 }} onClick={() => { updateEmployee(emp.id, empEditData); setEditingEmpId(null); setIsEmpEditServicesOpen(false); }}>Save</button>
-                            <button className="btn-delete" style={{ border: '1.5px solid var(--border)', color: 'var(--text-muted)', background: 'transparent' }} onClick={() => { setEditingEmpId(null); setIsEmpEditServicesOpen(false); }}>Cancel</button>
+                            <button className="btn-add" style={{ padding: '0.35rem 0.75rem', margin: 0 }} onClick={() => { updateEmployee(emp.id, empEditData); setEditingEmpId(null); setIsEmpEditServicesOpen(false); setIsEmpEditProjectsOpen(false); }}>Save</button>
+                            <button className="btn-delete" style={{ border: '1.5px solid var(--border)', color: 'var(--text-muted)', background: 'transparent' }} onClick={() => { setEditingEmpId(null); setIsEmpEditServicesOpen(false); setIsEmpEditProjectsOpen(false); }}>Cancel</button>
                           </span>
                         </div>
                       ) : (
                         // ── Normal display row ──
                         <div className="list-row" key={emp.id}>
                           <span>{i + 1}</span>
-                          <span className="list-name">{emp.name}</span>
-                          <span>{emp.designation || '-'}</span>
+                          <span style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+                            <span className="list-name">{emp.name}</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>{emp.designation || 'No Designation'}</span>
+                          </span>
+                          <span className="project-services-cell">
+                            {(emp.assignedProjectIds || []).length > 0 ? (
+                              <div className="gradient-tags-container">
+                                {emp.assignedProjectIds.map(pid => {
+                                  const p = projects.find(prj => prj.id === pid);
+                                  return p ? <span key={pid} className="gradient-tag">{p.name}</span> : null;
+                                })}
+                              </div>
+                            ) : <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>None assigned</span>}
+                          </span>
                           <span className="project-services-cell">
                             {(emp.assignedServiceIds || []).length > 0 ? (
                               <div className="gradient-tags-container">
@@ -655,7 +786,7 @@ export default function AdminPanel() {
                           <span style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                             <button
                               className="btn-action-edit"
-                              onClick={() => { setEditingEmpId(emp.id); setEmpEditData({ name: emp.name, designation: emp.designation || '', username: emp.username, password: emp.password, assignedServiceIds: emp.assignedServiceIds || [], canCreateTasks: emp.canCreateTasks ?? true, readOnlyAccess: emp.readOnlyAccess ?? false, canComment: emp.canComment ?? true }); }}
+                              onClick={() => { setEditingEmpId(emp.id); setEmpEditData({ name: emp.name, designation: emp.designation || '', username: emp.username, password: emp.password, assignedServiceIds: emp.assignedServiceIds || [], assignedProjectIds: emp.assignedProjectIds || [], canCreateTasks: emp.canCreateTasks ?? true, readOnlyAccess: emp.readOnlyAccess ?? false, canComment: emp.canComment ?? true }); }}
                               title="Edit Employee"
                             >
                               <FiEdit2 size={14} /> Edit

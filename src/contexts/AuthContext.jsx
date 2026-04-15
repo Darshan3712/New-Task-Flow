@@ -12,6 +12,7 @@ function decodeToken(token) {
       role: payload.role,
       designation: payload.designation,
       assignedServiceIds: payload.assignedServiceIds || [],
+      assignedProjectIds: payload.assignedProjectIds || [],
       projectId: payload.projectId || null,
     };
   } catch {
