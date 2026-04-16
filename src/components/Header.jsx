@@ -71,9 +71,24 @@ export default function Header({ onSearch }) {
           </div>
           <div className="mobile-actions">
             {(currentUser?.role === 'admin' || currentUser?.role === 'superadmin') && (
-              <button className="btn-mobile-nav" onClick={() => navigate('/admin')} title="Admin Panel">
-                <FiSettings size={18} />
-              </button>
+              <>
+                <div className="notif-bell-wrapper" style={{ marginRight: '0.5rem' }}>
+                  <button
+                    className="notif-bell-btn"
+                    onClick={() => setShowNotifPanel(v => !v)}
+                    title="Client Task Requests"
+                    style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff' }}
+                  >
+                    <FiBell size={18} />
+                    {unassignedCount > 0 && (
+                      <span className="notif-dot" style={{ width: '14px', height: '14px', fontSize: '0.6rem' }}>{unassignedCount > 99 ? '99+' : unassignedCount}</span>
+                    )}
+                  </button>
+                </div>
+                <button className="btn-mobile-nav" onClick={() => navigate('/admin')} title="Admin Panel">
+                  <FiSettings size={18} />
+                </button>
+              </>
             )}
             <button className="btn-mobile-nav" onClick={handleLogout} title="Logout">
               <FiLogOut size={18} />
