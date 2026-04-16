@@ -47,6 +47,7 @@ export default function AdminPanel() {
   const [empCanCreateTasks, setEmpCanCreateTasks] = useState(true);
   const [empReadOnlyTasks, setEmpReadOnlyTasks] = useState(false);
   const [empCanComment, setEmpCanComment] = useState(true);
+  const [empIsSenior, setEmpIsSenior] = useState(false);
   const [empMsg, setEmpMsg] = useState('');
   const [isEmpServicesOpen, setIsEmpServicesOpen] = useState(false);
   const [empServicesSearch, setEmpServicesSearch] = useState('');
@@ -66,7 +67,7 @@ export default function AdminPanel() {
 
   // ── Employee edit state ─────────────────────────────────────────────────
   const [editingEmpId, setEditingEmpId] = useState(null);
-  const [empEditData, setEmpEditData] = useState({ name: '', designation: '', username: '', password: '', assignedServiceIds: [], assignedProjectIds: [], canCreateTasks: true, readOnlyAccess: false, canComment: true });
+  const [empEditData, setEmpEditData] = useState({ name: '', designation: '', username: '', password: '', assignedServiceIds: [], assignedProjectIds: [], canCreateTasks: true, readOnlyAccess: false, canComment: true, isSenior: false });
   const [isEmpEditServicesOpen, setIsEmpEditServicesOpen] = useState(false);
   const [empEditServicesSearch, setEmpEditServicesSearch] = useState('');
   const empEditServicesRef = useRef(null);
@@ -176,7 +177,8 @@ export default function AdminPanel() {
     addEmployee(empName.trim(), empUsername.trim(), empPassword.trim(), empDesignation.trim(), empAssignedServiceIds, empAssignedProjectIds, {
       canCreateTasks: empCanCreateTasks,
       readOnlyAccess: empReadOnlyTasks,
-      canComment: empCanComment
+      canComment: empCanComment,
+      isSenior: empIsSenior,
     });
     setEmpName('');
     setEmpDesignation('');
@@ -187,6 +189,7 @@ export default function AdminPanel() {
     setEmpCanCreateTasks(true);
     setEmpReadOnlyTasks(false);
     setEmpCanComment(true);
+    setEmpIsSenior(false);
     setEmpMsg('✅ Employee added successfully!');
     setTimeout(() => setEmpMsg(''), 3000);
   };
@@ -629,6 +632,20 @@ export default function AdminPanel() {
                     )}
                   </div>
                 </div>
+                <div className="form-row">
+                  <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem' }}>
+                    <input
+                      type="checkbox"
+                      id="isSenior"
+                      checked={empIsSenior}
+                      onChange={(e) => setEmpIsSenior(e.target.checked)}
+                      style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: 'var(--accent)' }}
+                    />
+                    <label htmlFor="isSenior" style={{ marginBottom: 0, cursor: 'pointer', fontSize: '1rem', color: 'var(--text)', fontWeight: 600 }}>
+                      Senior Employee (Can assign tasks to others)
+                    </label>
+                  </div>
+                </div>
                 {/* Employee Permissions section removed per user request */}
                 {empMsg && <div className="form-msg">{empMsg}</div>}
                 <button type="submit" className="btn-add">
@@ -744,10 +761,21 @@ export default function AdminPanel() {
                             <input type="text" value={empEditData.username} onChange={(e) => setEmpEditData({ ...empEditData, username: e.target.value })} style={{ width: '100%', padding: '0.3rem' }} />
                             <input type="text" value={empEditData.password} onChange={(e) => setEmpEditData({ ...empEditData, password: e.target.value })} style={{ width: '100%', padding: '0.3rem' }} />
                           </span>
-                            {/* Permissions checkboxes removed */}
-                          <span style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                            <button className="btn-add" style={{ padding: '0.35rem 0.75rem', margin: 0 }} onClick={() => { updateEmployee(emp.id, empEditData); setEditingEmpId(null); setIsEmpEditServicesOpen(false); setIsEmpEditProjectsOpen(false); }}>Save</button>
-                            <button className="btn-delete" style={{ border: '1.5px solid var(--border)', color: 'var(--text-muted)', background: 'transparent' }} onClick={() => { setEditingEmpId(null); setIsEmpEditServicesOpen(false); setIsEmpEditProjectsOpen(false); }}>Cancel</button>
+                          <span style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', alignItems: 'flex-start', justifyContent: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                              <input
+                                type="checkbox"
+                                id={`edit-senior-${emp.id}`}
+                                checked={empEditData.isSenior}
+                                onChange={(e) => setEmpEditData({ ...empEditData, isSenior: e.target.checked })}
+                                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--accent)' }}
+                              />
+                              <label htmlFor={`edit-senior-${emp.id}`} style={{ fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600 }}>Senior</label>
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                              <button className="btn-add" style={{ padding: '0.35rem 0.75rem', margin: 0 }} onClick={() => { updateEmployee(emp.id, empEditData); setEditingEmpId(null); setIsEmpEditServicesOpen(false); setIsEmpEditProjectsOpen(false); }}>Save</button>
+                              <button className="btn-delete" style={{ border: '1.5px solid var(--border)', color: 'var(--text-muted)', background: 'transparent', padding: '0.35rem 0.75rem' }} onClick={() => { setEditingEmpId(null); setIsEmpEditServicesOpen(false); setIsEmpEditProjectsOpen(false); }}>Cancel</button>
+                            </div>
                           </span>
                         </div>
                       ) : (
@@ -755,7 +783,10 @@ export default function AdminPanel() {
                         <div className="list-row" key={emp.id}>
                           <span>{i + 1}</span>
                           <span style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
-                            <span className="list-name">{emp.name}</span>
+                            <span className="list-name">
+                              {emp.name}
+                              {emp.isSenior && <span className="gradient-tag sm" style={{ marginLeft: '0.4rem', fontSize: '0.65rem', padding: '0.1rem 0.4rem', background: 'var(--accent-gradient)', color: 'white', display: 'inline-flex', alignItems: 'center' }}>Senior</span>}
+                            </span>
                             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>{emp.designation || 'No Designation'}</span>
                           </span>
                           <span className="project-services-cell">
@@ -786,7 +817,7 @@ export default function AdminPanel() {
                           <span style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                             <button
                               className="btn-action-edit"
-                              onClick={() => { setEditingEmpId(emp.id); setEmpEditData({ name: emp.name, designation: emp.designation || '', username: emp.username, password: emp.password, assignedServiceIds: emp.assignedServiceIds || [], assignedProjectIds: emp.assignedProjectIds || [], canCreateTasks: emp.canCreateTasks ?? true, readOnlyAccess: emp.readOnlyAccess ?? false, canComment: emp.canComment ?? true }); }}
+                              onClick={() => { setEditingEmpId(emp.id); setEmpEditData({ name: emp.name, designation: emp.designation || '', username: emp.username, password: emp.password, assignedServiceIds: emp.assignedServiceIds || [], assignedProjectIds: emp.assignedProjectIds || [], canCreateTasks: emp.canCreateTasks ?? true, readOnlyAccess: emp.readOnlyAccess ?? false, canComment: emp.canComment ?? true, isSenior: !!emp.isSenior }); }}
                               title="Edit Employee"
                             >
                               <FiEdit2 size={14} /> Edit

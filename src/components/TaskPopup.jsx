@@ -382,11 +382,21 @@ function TaskEntry({ task, index, employees, services, updateField, onToggleEmp,
     effectiveServiceIds = headerServiceIds;
   }
 
-  const filteredEmployees = effectiveServiceIds.length > 0
+  let baseEmployees = effectiveServiceIds.length > 0
     ? employees.filter(emp =>
         (emp.assignedServiceIds || []).some(sid => effectiveServiceIds.includes(sid))
       )
     : employees;
+
+  // Senior Employee logic: Standard employees can only assign to themselves.
+  // currentUser role is 'employee' and isSenior is false.
+  // Admins and Superadmins (and Senior Employees) can assign to anyone.
+  const isEmployee = currentUser?.role === 'employee';
+  const isSenior = currentUser?.isSenior === true;
+  
+  const filteredEmployees = (isEmployee && !isSenior)
+    ? baseEmployees.filter(emp => emp.id === currentUser.id)
+    : baseEmployees;
 
   const getEmpText = () => {
     const ids = task.employeeIds || [];

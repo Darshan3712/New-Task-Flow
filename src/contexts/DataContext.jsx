@@ -181,6 +181,7 @@ export function DataProvider({ children }) {
       canCreateTasks: permissions.canCreateTasks !== false,
       readOnlyAccess: permissions.readOnlyAccess === true,
       canComment: permissions.canComment !== false,
+      isSenior: permissions.isSenior === true,
     });
     setEmployees(prev => [...prev, emp]);
     return emp;
@@ -237,13 +238,7 @@ export function DataProvider({ children }) {
       return next;
     });
   };
-  const updateTasks = async (projectId, monthStr, data) => {
-    const updated = await api.updateTasks(projectId, monthStr, data);
-    setTasks(prev => ({ ...prev, [projectId]: { ...prev[projectId], [monthStr]: updated } }));
-    return updated;
-  };
-
-  // ── System Settings ───────────────────────────────────────────────────────
+  // System Settings ───────────────────────────────────────────────────────
   const updateSystemSettings = async (settings) => {
     const updated = await api.updateSystemSettings(settings);
     setSystemSettings(updated);

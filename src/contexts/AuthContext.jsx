@@ -14,6 +14,7 @@ function decodeToken(token) {
       assignedServiceIds: payload.assignedServiceIds || [],
       assignedProjectIds: payload.assignedProjectIds || [],
       projectId: payload.projectId || null,
+      isSenior: !!payload.isSenior,
     };
   } catch {
     return null;

@@ -56,7 +56,8 @@ export const api = {
           role: 'employee',
           designation: emp.designation,
           assignedServiceIds: emp.assignedServiceIds || [],
-          assignedProjectIds: emp.assignedProjectIds || []
+          assignedProjectIds: emp.assignedProjectIds || [],
+          isSenior: !!emp.isSenior
         })
       };
     }
@@ -227,7 +228,13 @@ export const api = {
   createEmployee: async (data) => {
     await mockDelay();
     const employees = getStore('employees', []);
-    const newEmp = { id: Date.now().toString(), ...data, assignedServiceIds: data.assignedServiceIds || [], assignedProjectIds: data.assignedProjectIds || [] };
+    const newEmp = { 
+      id: Date.now().toString(), 
+      ...data, 
+      isSenior: !!data.isSenior,
+      assignedServiceIds: data.assignedServiceIds || [], 
+      assignedProjectIds: data.assignedProjectIds || [] 
+    };
     employees.push(newEmp);
     setStore('employees', employees);
     return newEmp;

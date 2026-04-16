@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
-import { FiCalendar, FiSend, FiPlus, FiClock, FiX } from 'react-icons/fi';
+import { FiCalendar, FiSend, FiPlus, FiClock, FiX, FiChevronDown } from 'react-icons/fi';
+import { useRef, useEffect } from 'react';
 
 const STATUS_META = {
   gray:   { label: 'Pending',     color: '#6b7280' },
@@ -78,6 +79,19 @@ export default function ClientPortal() {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const statusDropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target)) {
+        setIsStatusDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const years = [];
   for (let y = now.getFullYear() - 3; y <= now.getFullYear() + 3; y++) {
@@ -86,7 +100,9 @@ export default function ClientPortal() {
 
   const filteredClientTasks = clientTasks.filter(task => {
     const taskDate = task.createdAt ? new Date(task.createdAt) : new Date();
-    return taskDate.getMonth() === selectedMonth && taskDate.getFullYear() === selectedYear;
+    const dateMatch = taskDate.getMonth() === selectedMonth && taskDate.getFullYear() === selectedYear;
+    const statusMatch = selectedStatus === 'all' || task.status === selectedStatus;
+    return dateMatch && statusMatch;
   });
 
   return (
@@ -101,6 +117,47 @@ export default function ClientPortal() {
         
         <div className="header-center">
           <div className="header-row-2" style={{ justifyContent: 'center', width: '100%' }}>
+            <div className="header-control" ref={statusDropdownRef}>
+              <label className="header-label">Task Status</label>
+              <div className="custom-dropdown-container">
+                <div 
+                  className={`header-custom-select ${isStatusDropdownOpen ? 'active' : ''}`}
+                  onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                >
+                  <div className="selected-value">
+                    {selectedStatus === 'all' ? (
+                      'All Statuses'
+                    ) : (
+                      <>
+                        <span className="status-dot" style={{ backgroundColor: STATUS_META[selectedStatus]?.color }}></span>
+                        {STATUS_META[selectedStatus]?.label}
+                      </>
+                    )}
+                  </div>
+                  <FiChevronDown className={`chevron ${isStatusDropdownOpen ? 'up' : ''}`} />
+                </div>
+                {isStatusDropdownOpen && (
+                  <div className="header-dropdown-menu">
+                    <div 
+                      className={`header-dropdown-item ${selectedStatus === 'all' ? 'active' : ''}`}
+                      onClick={() => { setSelectedStatus('all'); setIsStatusDropdownOpen(false); }}
+                    >
+                      All Statuses
+                    </div>
+                    {Object.entries(STATUS_META).map(([key, meta]) => (
+                      <div 
+                        key={key} 
+                        className={`header-dropdown-item ${selectedStatus === key ? 'active' : ''}`}
+                        onClick={() => { setSelectedStatus(key); setIsStatusDropdownOpen(false); }}
+                      >
+                        <span className="status-dot" style={{ backgroundColor: meta.color }}></span>
+                        {meta.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
             <div className="header-control">
               <label className="header-label">Month</label>
               <select

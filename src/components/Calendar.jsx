@@ -455,9 +455,8 @@ export default function Calendar({ projectId, month, year, serviceIds = [], isMa
       if (!ct.assignedEmployeeId) return false;
       // Resolve which date this task should appear on
       // — use assignedDate if set, otherwise fall back to requiredBy
-      const effectiveDate = ct.assignedDate || ct.requiredBy;
-      if (!effectiveDate) return false;
-      if (effectiveDate !== dateStr) return false;
+      const effectiveDate = ct.assignedDate;
+      if (!effectiveDate || effectiveDate !== dateStr) return false;
 
       // Enforce project filter for ALL roles
       if (ct.projectId !== projectId) return false;

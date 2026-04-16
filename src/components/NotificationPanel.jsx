@@ -34,8 +34,8 @@ export default function NotificationPanel({ onClose }) {
     if (!empId) return;
 
     const serviceId = sel.serviceId || null;
-    // Default date: client's requiredBy or today
-    const assignedDate = sel.date || task.requiredBy || new Date().toISOString().split('T')[0];
+    // Default to Today:
+    const assignedDate = sel.date || new Date().toISOString().split('T')[0];
 
     await assignClientTask(taskId, empId, serviceId, assignedDate);
     setAssignedMsg(prev => ({ ...prev, [taskId]: '✅ Assigned!' }));
@@ -44,10 +44,13 @@ export default function NotificationPanel({ onClose }) {
 
   const handleReassign = async (taskId, task) => {
     const sel = assignSelections[taskId] || {};
-    const empId = sel.empId;
+    const empId = sel.empId || task.assignedEmployeeId;
     if (!empId) return;
     const serviceId = sel.serviceId !== undefined ? sel.serviceId : task.serviceId;
-    const assignedDate = sel.date || task.assignedDate || task.requiredBy || new Date().toISOString().split('T')[0];
+    // Default to Today specifically to help move tasks 'stuck' on the deadline, 
+    // but allowing the existing assignedDate if the user intentionally wants to keep it.
+    const assignedDate = sel.date || task.assignedDate || new Date().toISOString().split('T')[0];
+    
     await assignClientTask(taskId, empId, serviceId, assignedDate);
     setAssignedMsg(prev => ({ ...prev, [taskId]: '✅ Reassigned!' }));
     setTimeout(() => setAssignedMsg(prev => ({ ...prev, [taskId]: '' })), 2500);
@@ -135,7 +138,7 @@ export default function NotificationPanel({ onClose }) {
                             type="date"
                             className="ntc-emp-select"
                             style={{ paddingLeft: '2rem' }}
-                            value={sel.date || task.requiredBy || ''}
+                            value={sel.date || new Date().toISOString().split('T')[0]}
                             onChange={e => updateSelection(task.id, 'date', e.target.value)}
                           />
                         </div>
@@ -190,7 +193,7 @@ export default function NotificationPanel({ onClose }) {
                                 type="date"
                                 className="ntc-emp-select"
                                 style={{ paddingLeft: '2rem' }}
-                                value={sel.date || task.assignedDate || task.requiredBy || ''}
+                                value={sel.date || (task.assignedDate === task.requiredBy ? new Date().toISOString().split('T')[0] : (task.assignedDate || new Date().toISOString().split('T')[0]))}
                                 onChange={e => updateSelection(task.id, 'date', e.target.value)}
                               />
                             </div>
