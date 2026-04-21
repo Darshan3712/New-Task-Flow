@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { FaMedal } from 'react-icons/fa';
 import MultiSelectDropdown from './MultiSelectDropdown';
 
 export default function EmployeesTab({ employees, projects, services, addEmployee, updateEmployee, setDeleteTarget }) {
@@ -218,7 +219,7 @@ export default function EmployeesTab({ employees, projects, services, addEmploye
                 style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: 'var(--accent)' }}
               />
               <label htmlFor="isSenior" style={{ marginBottom: 0, cursor: 'pointer', fontSize: '1rem', color: 'var(--text)', fontWeight: 600 }}>
-                Senior Employee (Can assign tasks to others)
+                Can Assign Tasks
               </label>
             </div>
           </div>
@@ -319,7 +320,7 @@ export default function EmployeesTab({ employees, projects, services, addEmploye
                           style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--accent)' }}
                         />
                         <label htmlFor={`edit-senior-${emp.id}`} style={{ fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600 }}>
-                          Senior
+                          Can Assign Tasks
                         </label>
                       </div>
                       <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
@@ -350,8 +351,8 @@ export default function EmployeesTab({ employees, projects, services, addEmploye
                       <span className="list-name">
                         {emp.name}
                         {emp.isSenior && (
-                          <span className="gradient-tag sm" style={{ marginLeft: '0.4rem', fontSize: '0.65rem', padding: '0.1rem 0.4rem', background: 'var(--accent-gradient)', color: 'white', display: 'inline-flex', alignItems: 'center' }}>
-                            Senior
+                          <span title="Can Assign Tasks" style={{ marginLeft: '0.4rem', color: '#F59E0B', display: 'inline-flex', alignItems: 'center', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }}>
+                            <FaMedal size={16} />
                           </span>
                         )}
                       </span>
