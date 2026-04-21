@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useData } from '../contexts/DataContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useData } from '../../contexts/DataContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { FiX, FiCalendar, FiUser, FiCheck } from 'react-icons/fi';
 
 const STATUS_META = {
@@ -47,10 +47,10 @@ export default function NotificationPanel({ onClose }) {
     const empId = sel.empId || task.assignedEmployeeId;
     if (!empId) return;
     const serviceId = sel.serviceId !== undefined ? sel.serviceId : task.serviceId;
-    // Default to Today specifically to help move tasks 'stuck' on the deadline, 
+    // Default to Today specifically to help move tasks 'stuck' on the deadline,
     // but allowing the existing assignedDate if the user intentionally wants to keep it.
     const assignedDate = sel.date || task.assignedDate || new Date().toISOString().split('T')[0];
-    
+
     await assignClientTask(taskId, empId, serviceId, assignedDate);
     setAssignedMsg(prev => ({ ...prev, [taskId]: '✅ Reassigned!' }));
     setTimeout(() => setAssignedMsg(prev => ({ ...prev, [taskId]: '' })), 2500);

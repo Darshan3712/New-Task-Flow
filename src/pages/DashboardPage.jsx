@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Header from '../components/Header';
-import Calendar from '../components/Calendar';
+import Header from '../components/header/Header';
+import Calendar from '../components/calendar/Calendar';
 import ClientPortal from './ClientPortal';
 import { useData } from '../contexts/DataContext';
 import { format } from 'date-fns';
