@@ -17,15 +17,17 @@ export default function Header({ onSearch }) {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const unassignedCount = (clientTasks || []).filter(t => !t.assignedEmployeeId).length;
-  const visibleServices = currentUser?.role === 'employee'
-    ? services.filter(s => (currentUser?.assignedServiceIds || []).includes(s.id))
-    : services;
 
   const now = new Date();
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedServiceId, setSelectedServiceId] = useState('');
+
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
+  const visibleServices = selectedProject && selectedProject.serviceIds?.length > 0
+    ? services.filter(s => selectedProject.serviceIds.includes(s.id))
+    : services;
 
   const confirmLogout = () => { setShowLogoutConfirm(false); logout(); navigate('/login'); };
 
@@ -72,7 +74,7 @@ export default function Header({ onSearch }) {
             </div>
             <div className="header-control">
               <label className="header-label">Project</label>
-              <select className="header-select" value={selectedProjectId} onChange={(e) => setSelectedProjectId(e.target.value)}>
+              <select className="header-select" value={selectedProjectId} onChange={(e) => { setSelectedProjectId(e.target.value); setSelectedServiceId(''); }}>
                 <option value="">-- Select Project --</option>
                 <option value="__master__">★ Master View (All Projects)</option>
                 {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}

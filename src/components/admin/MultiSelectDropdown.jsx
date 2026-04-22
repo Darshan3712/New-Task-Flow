@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { FiChevronDown } from 'react-icons/fi';
 
 /**
@@ -29,6 +30,19 @@ export default function MultiSelectDropdown({
   const filtered = items.filter(
     (it) => it.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleOutsideClick(e) {
+      if (dropdownRef?.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+        setSearchTerm('');
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [isOpen, dropdownRef, setIsOpen, setSearchTerm]);
 
   return (
     <div className="multi-select-container" ref={dropdownRef}>

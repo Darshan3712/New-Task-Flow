@@ -166,7 +166,7 @@ export default function ClientPortal() {
       </main>
 
       {liveSelectedTask && <ClientCommentPopup task={liveSelectedTask} employees={employees} commentText={commentText} setCommentText={setCommentText} onSend={handleSendComment} onClose={() => { setSelectedTask(null); setCommentText(''); }} />}
-      {showLogoutConfirm && <LogoutConfirmModal onCancel={() => setShowLogoutConfirm(false)} onConfirm={() => { setShowLogoutConfirm(false); logout(); window.location.href = '/login'; }} />}
+      {showLogoutConfirm && <LogoutConfirmModal onCancel={() => setShowLogoutConfirm(false)} onConfirm={() => { setShowLogoutConfirm(false); logout(); window.location.href = import.meta.env.BASE_URL + 'login'; }} />}
     </div>
   );
 }

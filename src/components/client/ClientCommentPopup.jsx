@@ -1,4 +1,5 @@
 import { FiCalendar, FiSend, FiX } from 'react-icons/fi';
+import LinkifyText from '../task/LinkifyText';
 
 export default function ClientCommentPopup({ task, employees, commentText, setCommentText, onSend, onClose }) {
   const STATUS_META = {
@@ -24,7 +25,7 @@ export default function ClientCommentPopup({ task, employees, commentText, setCo
         </div>
 
         <div className="popup-body scrollable-body" style={{ maxHeight: '420px' }}>
-          {task.description && <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '0.75rem', lineHeight: 1.6 }}>{task.description}</p>}
+          {task.description && <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '0.75rem', lineHeight: 1.6, wordBreak: 'break-word' }}><LinkifyText text={task.description} /></p>}
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
             {task.requiredBy && <span><FiCalendar size={12} /> {new Date(task.requiredBy).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
             {assignedEmp && <span>👤 {assignedEmp.name}</span>}
@@ -36,7 +37,7 @@ export default function ClientCommentPopup({ task, employees, commentText, setCo
               {(task.comments || []).map(c => (
                 <div key={c.id} className={`comment-bubble ${c.authorRole === 'client' ? 'cb-client' : 'cb-employee'}`}>
                   <span className="cb-author">{c.authorName} <em>({c.authorRole === 'client' ? 'You' : 'Team'})</em></span>
-                  <p className="cb-text">{c.text}</p>
+                  <p className="cb-text"><LinkifyText text={c.text} /></p>
                   <span className="cb-time">{new Date(c.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
               ))}

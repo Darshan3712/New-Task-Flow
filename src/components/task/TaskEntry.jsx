@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { FiTrash2 } from 'react-icons/fi';
+import LinkifyText from './LinkifyText';
 
 const STATUSES = [
   { value: 'gray',   label: 'In Progress', emoji: '⚫' },
@@ -12,7 +13,8 @@ const STATUSES = [
 export default function TaskEntry({
   task, index, employees, services, updateField,
   onToggleEmp, onToggleSrv, onRemove,
-  showRemove, headerServiceIds, isActive, readOnlyAccess,
+  showRemove, headerServiceIds, isActive, readOnlyAccess, projectId,
+  empError, srvError,
 }) {
   const { currentUser } = useAuth();
   const [isEmpOpen, setIsEmpOpen] = useState(false);
@@ -20,6 +22,7 @@ export default function TaskEntry({
   const empRef = useRef(null);
   const srvRef = useRef(null);
   const entryRef = useRef(null);
+  const [isEditingDesc, setIsEditingDesc] = useState(false);
 
   useEffect(() => { if (isActive && entryRef.current) entryRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, [isActive]);
 
@@ -33,8 +36,11 @@ export default function TaskEntry({
   }, [isEmpOpen, isSrvOpen]);
 
   const filteredServices = headerServiceIds.length > 0 ? services.filter(s => headerServiceIds.includes(s.id)) : services;
-  let effectiveServiceIds = task.serviceIds?.length ? task.serviceIds : (headerServiceIds?.length ? headerServiceIds : []);
-  let baseEmployees = effectiveServiceIds.length > 0 ? employees.filter(emp => (emp.assignedServiceIds || []).some(sid => effectiveServiceIds.includes(sid))) : employees;
+
+  // Filter employees by same project only (no service-based filter)
+  const baseEmployees = projectId
+    ? employees.filter(emp => (emp.assignedProjectIds || []).includes(projectId))
+    : employees;
   const isEmployee = currentUser?.role === 'employee';
   const isSenior = currentUser?.isSenior === true;
   const filteredEmployees = (isEmployee && !isSenior) ? baseEmployees.filter(emp => emp.id === currentUser.id) : baseEmployees;
@@ -52,17 +58,61 @@ export default function TaskEntry({
         <div className="task-entry-main">
           <div className="form-group fg-title">
             <label className="popup-label">Task Title</label>
-            <input type="text" className="popup-input" placeholder="What needs to be done?" value={task.title} onChange={(e) => updateField('title', e.target.value)} readOnly={readOnlyAccess} />
+            {readOnlyAccess ? (
+              <div className="popup-input" style={{ minHeight: '2.2rem', display: 'flex', alignItems: 'center', cursor: 'default', userSelect: 'text' }}>
+                <LinkifyText text={task.title || '—'} />
+              </div>
+            ) : (
+              <input type="text" className="popup-input" placeholder="What needs to be done?" value={task.title} onChange={(e) => updateField('title', e.target.value)} />
+            )}
           </div>
           <div className="form-group fg-desc">
             <label className="popup-label">Description</label>
-            <textarea className="popup-input popup-textarea" placeholder="Add more details about the task..." value={task.description} onChange={(e) => updateField('description', e.target.value)} rows={2} readOnly={readOnlyAccess} />
+            {readOnlyAccess ? (
+              <div className="popup-input popup-textarea" style={{ minHeight: '3.5rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', cursor: 'default', userSelect: 'text', background: '#fff', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
+                <LinkifyText text={task.description || '—'} />
+              </div>
+            ) : isEditingDesc ? (
+              <textarea 
+                className="popup-input popup-textarea" 
+                placeholder="Add more details about the task..." 
+                value={task.description} 
+                onChange={(e) => updateField('description', e.target.value)} 
+                onBlur={() => setIsEditingDesc(false)}
+                autoFocus
+                rows={2} 
+              />
+            ) : (
+              <div 
+                className="popup-input popup-textarea" 
+                style={{ minHeight: '3.5rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', cursor: 'text', userSelect: 'text', background: '#fff', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
+                onClick={(e) => {
+                  if (e.target.tagName !== 'A') setIsEditingDesc(true);
+                }}
+              >
+                {!task.description ? (
+                  <span style={{ color: 'var(--text-muted)' }}>Add more details about the task...</span>
+                ) : (
+                  <LinkifyText text={task.description} />
+                )}
+              </div>
+            )}
           </div>
+
           <div className="form-row fg-row">
             <div className="form-group">
-              <label className="popup-label">Employees</label>
+              <label className="popup-label" style={empError ? { color: 'var(--red)' } : {}}>
+                Employees{empError && <span style={{ marginLeft: '0.4rem', fontSize: '0.75rem', fontWeight: 700 }}>⚠ Required</span>}
+              </label>
               <div className="multi-select-container" ref={empRef}>
-                <div className={`dropdown-trigger ${isEmpOpen ? 'active' : ''} ${readOnlyAccess ? 'disabled' : ''}`} onClick={() => !readOnlyAccess && setIsEmpOpen(!isEmpOpen)} style={readOnlyAccess ? { cursor: 'not-allowed', background: 'var(--bg)' } : {}}>
+                <div
+                  className={`dropdown-trigger ${isEmpOpen ? 'active' : ''} ${readOnlyAccess ? 'disabled' : ''}`}
+                  onClick={() => !readOnlyAccess && setIsEmpOpen(!isEmpOpen)}
+                  style={{
+                    ...(readOnlyAccess ? { cursor: 'not-allowed', background: 'var(--bg)' } : {}),
+                    ...(empError ? { borderColor: 'var(--red)', boxShadow: '0 0 0 3px rgba(239,68,68,0.18)', animation: 'shake 0.4s ease' } : {}),
+                  }}
+                >
                   <span className="trigger-text">{getEmpText()}</span>
                   <span className="trigger-icon">▼</span>
                 </div>
@@ -81,9 +131,18 @@ export default function TaskEntry({
               </div>
             </div>
             <div className="form-group">
-              <label className="popup-label">Services</label>
+              <label className="popup-label" style={srvError ? { color: 'var(--red)' } : {}}>
+                Services{srvError && <span style={{ marginLeft: '0.4rem', fontSize: '0.75rem', fontWeight: 700 }}>⚠ Required</span>}
+              </label>
               <div className="multi-select-container" ref={srvRef}>
-                <div className={`dropdown-trigger ${isSrvOpen ? 'active' : ''} ${readOnlyAccess ? 'disabled' : ''}`} onClick={() => !readOnlyAccess && setIsSrvOpen(!isSrvOpen)} style={readOnlyAccess ? { cursor: 'not-allowed', background: 'var(--bg)' } : {}}>
+                <div
+                  className={`dropdown-trigger ${isSrvOpen ? 'active' : ''} ${readOnlyAccess ? 'disabled' : ''}`}
+                  onClick={() => !readOnlyAccess && setIsSrvOpen(!isSrvOpen)}
+                  style={{
+                    ...(readOnlyAccess ? { cursor: 'not-allowed', background: 'var(--bg)' } : {}),
+                    ...(srvError ? { borderColor: 'var(--red)', boxShadow: '0 0 0 3px rgba(239,68,68,0.18)', animation: 'shake 0.4s ease' } : {}),
+                  }}
+                >
                   <span className="trigger-text">{getSrvText()}</span>
                   <span className="trigger-icon">▼</span>
                 </div>

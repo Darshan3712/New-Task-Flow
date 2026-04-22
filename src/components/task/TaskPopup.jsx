@@ -5,6 +5,7 @@ import { FiX, FiSave, FiTrash2, FiMessageCircle, FiSend, FiCalendar } from 'reac
 import { v4 as uuidv4 } from 'uuid';
 import ConfirmDeleteModal from '../ConfirmDeleteModal';
 import TaskEntry from './TaskEntry';
+import LinkifyText from './LinkifyText';
 
 const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -35,10 +36,15 @@ export default function TaskPopup({ projectId, dateStr, headerServiceIds = [], a
   const [taskList, setTaskList] = useState(() => existingTasks?.length ? existingTasks : [{ id: uuidv4(), title: '', description: '', employeeIds: [], serviceIds: [], status: 'gray' }]);
   const [msg, setMsg] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [validationErrors, setValidationErrors] = useState({});
   const [commentTexts, setCommentTexts] = useState({});
   const [openClientComments, setOpenClientComments] = useState({});
 
   const project = projects.find((p) => p.id === projectId);
+  const projectServices = project && project.serviceIds?.length > 0
+    ? services.filter(s => project.serviceIds.includes(s.id))
+    : services;
+
   const [yr, mo, dy] = dateStr.split('-');
   const displayDate = `${Number(dy)} ${MONTHS_FULL[Number(mo) - 1]} ${yr}`;
 
@@ -57,9 +63,26 @@ export default function TaskPopup({ projectId, dateStr, headerServiceIds = [], a
   };
 
   const handleSave = () => {
-    const valid = taskList.filter(t => t.title.trim());
-    if (!valid.length) { deleteTasks(projectId, dateStr); setMsg('✅ Tasks cleared!'); }
-    else { saveTasks(projectId, dateStr, valid.map(t => ({ ...t, title: t.title.trim(), description: t.description.trim(), updatedAt: new Date().toISOString() }))); setMsg('✅ Tasks saved!'); }
+    const titled = taskList.filter(t => t.title.trim());
+    if (!titled.length) { setValidationErrors({}); deleteTasks(projectId, dateStr); setMsg('✅ Tasks cleared!'); setTimeout(() => onClose(), 800); return; }
+
+    // Validate each titled task has at least one employee AND one service
+    const errors = {};
+    titled.forEach(t => {
+      const missingEmp = !t.employeeIds?.length;
+      const missingSrv = !t.serviceIds?.length;
+      if (missingEmp || missingSrv) errors[t.id] = { missingEmp, missingSrv };
+    });
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      setMsg('⚠️ Please assign an Employee and a Service to each task.');
+      return;
+    }
+
+    setValidationErrors({});
+    saveTasks(projectId, dateStr, titled.map(t => ({ ...t, title: t.title.trim(), description: t.description.trim(), updatedAt: new Date().toISOString() })));
+    setMsg('✅ Tasks saved!');
     setTimeout(() => onClose(), 800);
   };
 
@@ -98,7 +121,7 @@ export default function TaskPopup({ projectId, dateStr, headerServiceIds = [], a
             {!activeClientTaskId && taskList.filter((task) => !activeTaskId || task.id === activeTaskId).map((task) => {
               const originalIndex = taskList.findIndex(t => t.id === task.id);
               return (
-                <TaskEntry key={task.id || originalIndex} task={task} index={originalIndex} employees={employees} services={services} updateField={(f, v) => updateTaskField(originalIndex, f, v)} onToggleEmp={(id) => toggleEmployee(originalIndex, id)} onToggleSrv={(id) => toggleService(originalIndex, id)} onRemove={() => setDeleteTarget({ type: 'single', index: originalIndex, name: `Task ${originalIndex + 1}` })} headerServiceIds={headerServiceIds} isLast={originalIndex === taskList.length - 1} showRemove={!empPerms.readOnlyAccess} isActive={activeTaskId === task.id} readOnlyAccess={empPerms.readOnlyAccess} />
+                <TaskEntry key={task.id || originalIndex} task={task} index={originalIndex} employees={employees} services={projectServices} updateField={(f, v) => { updateTaskField(originalIndex, f, v); setValidationErrors(prev => { const n = {...prev}; delete n[task.id]; return n; }); }} onToggleEmp={(id) => { toggleEmployee(originalIndex, id); setValidationErrors(prev => { const n = {...prev}; if (n[task.id]) delete n[task.id].missingEmp; if (n[task.id] && !n[task.id].missingSrv) delete n[task.id]; return n; }); }} onToggleSrv={(id) => { toggleService(originalIndex, id); setValidationErrors(prev => { const n = {...prev}; if (n[task.id]) delete n[task.id].missingSrv; if (n[task.id] && !n[task.id].missingEmp) delete n[task.id]; return n; }); }} onRemove={() => setDeleteTarget({ type: 'single', index: originalIndex, name: `Task ${originalIndex + 1}` })} headerServiceIds={headerServiceIds} isLast={originalIndex === taskList.length - 1} showRemove={!empPerms.readOnlyAccess} isActive={activeTaskId === task.id} readOnlyAccess={empPerms.readOnlyAccess} projectId={projectId} empError={!!validationErrors[task.id]?.missingEmp} srvError={!!validationErrors[task.id]?.missingSrv} />
               );
             })}
 
@@ -118,8 +141,8 @@ export default function TaskPopup({ projectId, dateStr, headerServiceIds = [], a
                   const m = STATUS_META[ct.status] || STATUS_META.gray;
                   return (
                     <div key={ct.id} className="crs-task-card">
-                      <div className="crs-task-title">{ct.title}</div>
-                      {ct.description && <p className="crs-task-desc">{ct.description}</p>}
+                      <div className="crs-task-title"><LinkifyText text={ct.title} /></div>
+                      {ct.description && <p className="crs-task-desc"><LinkifyText text={ct.description} /></p>}
                       <div className="crs-meta" style={{ flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         {assignedEmp && <span>👤 {assignedEmp.name}</span>}
                         {assignedSvc && <span style={{ color: 'var(--accent)', fontWeight: 600 }}>📋 {assignedSvc.name}</span>}
@@ -134,7 +157,7 @@ export default function TaskPopup({ projectId, dateStr, headerServiceIds = [], a
                       </button>
                       {openClientComments[ct.id] && (
                         <div className="comment-thread" style={{ marginTop: '0.5rem' }}>
-                          {(ct.comments || []).map(c => <div key={c.id} className={`comment-bubble ${c.authorRole === 'client' ? 'cb-client' : 'cb-employee'}`}><span className="cb-author">{c.authorName} <em>({c.authorRole})</em></span><p className="cb-text">{c.text}</p><span className="cb-time">{new Date(c.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></div>)}
+                          {(ct.comments || []).map(c => <div key={c.id} className={`comment-bubble ${c.authorRole === 'client' ? 'cb-client' : 'cb-employee'}`}><span className="cb-author">{c.authorName} <em>({c.authorRole})</em></span><p className="cb-text"><LinkifyText text={c.text} /></p><span className="cb-time">{new Date(c.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></div>)}
                           {empPerms.canComment && !empPerms.readOnlyAccess && (
                             <div className="comment-input-row">
                               <input type="text" placeholder="Write a message..." value={commentTexts[ct.id] || ''} onChange={e => setCommentTexts(prev => ({ ...prev, [ct.id]: e.target.value }))} onKeyDown={e => { if (e.key === 'Enter') handleSendClientComment(ct.id); }} />

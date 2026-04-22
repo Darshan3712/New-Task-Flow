@@ -44,9 +44,30 @@ export function DataProvider({ children }) {
           api.getClientTasks(),
           api.getSystemSettings()
         ]);
-        setProjects(p.filter(proj => (currentUser.assignedProjectIds || []).includes(proj.id)));
+
+        // Source 1: fresh profile assignments from DB (avoids stale JWT)
+        const me = e.find(emp => emp.id === currentUser.id) || {};
+        const profileProjectIds = me.assignedProjectIds?.length
+          ? me.assignedProjectIds
+          : (currentUser.assignedProjectIds || []);
+        const profileServiceIds = me.assignedServiceIds?.length
+          ? me.assignedServiceIds
+          : (currentUser.assignedServiceIds || []);
+
+        // Source 2: projects where the admin assigned this employee directly to a task
+        // Task key format: "projectId_YYYY-MM-DD"
+        const taskProjectIds = Object.keys(tMap || {}).filter(key =>
+          (tMap[key] || []).some(t => (t.employeeIds || []).includes(currentUser.id))
+        ).map(key => key.split('_')[0]);
+
+        // Merge all project sources and filter the full project list
+        const allProjectIds = [...new Set([...profileProjectIds, ...taskProjectIds])];
+        setProjects(allProjectIds.length ? p.filter(proj => allProjectIds.includes(proj.id)) : []);
+
+        // Services: show only assigned ones (or ALL if none assigned on profile)
+        setServices(profileServiceIds.length ? s.filter(svc => profileServiceIds.includes(svc.id)) : s);
+
         setEmployees(e);
-        setServices(s);
         setTasks(tMap || {});
         setClientTasks(ct.filter(t => t.assignedEmployeeId === currentUser.id));
         setSystemSettings(sysSet);

@@ -59,6 +59,14 @@ body {
   position: relative;
 }
 
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-6px); }
+  40%       { transform: translateX(6px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
+
 html,
 #root {
   overflow-x: hidden;
@@ -2293,6 +2301,22 @@ label {
   .status-chip {
     padding: 0.75rem !important;
     /* Larger touch targets on mobile */
+  }
+
+  /* Master Sidebar Mobile Layout */
+  .master-sidebar-body {
+    flex-direction: column !important;
+  }
+  
+  .master-sidebar-projects {
+    width: 100% !important;
+    max-height: 35vh !important;
+    border-right: none !important;
+    border-bottom: 2px solid var(--border) !important;
+  }
+  
+  .master-sidebar-detail {
+    padding: 1rem !important;
   }
 }
 
