@@ -907,6 +907,23 @@ label {
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.legend-item:hover {
+  opacity: 0.8;
+}
+
+.status-legend.has-filter .legend-item:not(.active) {
+  opacity: 0.4;
+}
+
+.legend-item.active {
+  opacity: 1;
+  transform: scale(1.05);
+  color: var(--text);
 }
 
 .legend-dot {
@@ -965,7 +982,7 @@ label {
 
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
   min-width: 800px;
   /* Force minimum width to prevent squeezing */
@@ -1000,6 +1017,7 @@ label {
   flex-direction: column;
   align-items: flex-start;
   padding: 0.6rem;
+  min-width: 0;
 }
 
 .cal-cell-empty {
@@ -1094,6 +1112,7 @@ label {
   padding: 0.15rem 0.25rem;
   margin-top: 2px;
   width: 100%;
+  min-width: 0;
 }
 
 .day-status-dot {
@@ -1494,6 +1513,31 @@ label {
   color: var(--text);
   border-color: var(--border-hover);
 }
+
+.btn-admin-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  gap: 0.4rem;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-sm);
+  color: #ff9e9e;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-admin-logout:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #ffb3b3;
+}
+
 
 .admin-tabs {
   display: flex;
@@ -2036,6 +2080,7 @@ label {
   white-space: nowrap;
   flex: 1;
   opacity: 0.92;
+  min-width: 0;
 }
 
 /* ===== PROJECT LIST (4 columns) ===== */
@@ -2051,6 +2096,7 @@ label {
   gap: 2px;
   margin-top: 4px;
   width: 100%;
+  min-width: 0;
 }
 
 .day-task-entry {
@@ -2063,6 +2109,7 @@ label {
   cursor: pointer;
   background: rgba(255, 255, 255, 0.5);
   border: 1px solid transparent;
+  min-width: 0;
 }
 
 .day-task-entry:hover {
@@ -2080,6 +2127,7 @@ label {
   text-overflow: ellipsis;
   flex: 1;
   margin-right: 4px;
+  min-width: 0;
 }
 
 .inline-status-dot {
@@ -2171,10 +2219,26 @@ label {
     cursor: pointer;
   }
 
-  .header-select,
-  .dropdown-trigger {
+  .app-header .header-custom-select {
+    min-width: 0 !important;
     height: 36px !important;
-    font-size: 0.8rem !important;
+    min-height: 36px !important;
+    padding: 0 0.4rem;
+    font-size: 0.75rem !important;
+  }
+
+  .selected-value {
+    gap: 0.25rem;
+  }
+
+  .app-header .header-select,
+  .app-header .dropdown-trigger {
+    height: 36px !important;
+    font-size: 0.75rem !important;
+    padding: 0 0.4rem;
+    padding-right: 1.2rem;
+    background-position: right 0.2rem center;
+    background-size: 10px;
   }
 
   .dashboard-main {
@@ -2687,6 +2751,7 @@ label {
   margin-top: 4px;
   width: 100%;
   overflow: hidden;
+  min-width: 0;
 }
 
 .master-project-entry {
@@ -3047,6 +3112,7 @@ label {
   z-index: 1201;
   box-shadow: -8px 0 40px rgba(0,0,0,0.25);
   animation: slideInRight 0.22s ease;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes slideInRight {
@@ -3154,6 +3220,9 @@ label {
   color: var(--text-muted);
   margin: 0;
   line-height: 1.5;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .ntc-meta {
@@ -3219,6 +3288,250 @@ label {
   color: var(--text-muted);
   opacity: 0.7;
   margin-top: 0.15rem;
+}
+
+/* ── Notification Panel: Resize Controls ── */
+.notif-resize-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  background: var(--bg3);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 0.15rem 0.3rem;
+}
+
+.notif-resize-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+  padding: 0;
+}
+.notif-resize-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+.notif-resize-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.notif-resize-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 34px;
+  text-align: center;
+}
+
+/* ── Notification Panel: Tabs ── */
+.notif-tabs {
+  display: flex;
+  border-bottom: 1.5px solid var(--border);
+  background: var(--bg);
+}
+
+.notif-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.65rem 0.5rem;
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.notif-tab-btn:hover { color: var(--text); }
+.notif-tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.notif-tab-badge {
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  border-radius: 99px;
+  padding: 0.1rem 0.4rem;
+  min-width: 16px;
+  text-align: center;
+}
+
+/* ── Delete button on task card ── */
+.ntc-delete-btn {
+  background: none;
+  border: 1.5px solid transparent;
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+.ntc-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+.ntc-delete-btn.confirming {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  animation: pulse-red 0.8s ease-in-out infinite;
+}
+
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+  50%       { box-shadow: 0 0 0 4px rgba(239,68,68,0); }
+}
+
+.ntc-delete-confirm-msg {
+  font-size: 0.7rem;
+  color: #ef4444;
+  font-weight: 600;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+  margin-top: -0.15rem;
+}
+
+/* ── Client Comment Notification Cards ── */
+.notif-comment-card {
+  background: var(--bg3);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  border-left: 3px solid #3b82f6;
+}
+
+.ncc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ncc-project {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ncc-task-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.ncc-comment-bubble {
+  background: rgba(59, 130, 246, 0.07);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.ncc-comment-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ncc-author {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #3b82f6;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.ncc-date {
+  font-size: 0.67rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.ncc-comment-text {
+  font-size: 0.82rem;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.5;
+  font-style: italic;
+  word-break: break-word;
+}
+
+/* ── Clickable comment card (navigates to calendar) ── */
+.ncc-clickable {
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+.ncc-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.18);
+  border-color: #3b82f6;
+}
+
+.ncc-goto-arrow {
+  display: flex;
+  align-items: center;
+  color: #3b82f6;
+  opacity: 0;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.ncc-clickable:hover .ncc-goto-arrow {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+.ncc-nav-hint {
+  font-size: 0.67rem;
+  color: #3b82f6;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.15s;
+  margin-top: 0.1rem;
+}
+.ncc-clickable:hover .ncc-nav-hint {
+  opacity: 0.85;
 }
 
 /* Client List Table */
@@ -3422,6 +3735,9 @@ label {
   color: var(--text-muted);
   margin: 0;
   line-height: 1.5;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .ctc-meta {
@@ -3489,13 +3805,13 @@ label {
 .cb-client {
   background: rgba(139,92,246,0.1);
   border: 1px solid rgba(139,92,246,0.25);
-  align-self: flex-end;
+  align-self: flex-start;
 }
 
 .cb-employee {
   background: rgba(16,185,129,0.08);
   border: 1px solid rgba(16,185,129,0.2);
-  align-self: flex-start;
+  align-self: flex-end;
 }
 
 .cb-author {

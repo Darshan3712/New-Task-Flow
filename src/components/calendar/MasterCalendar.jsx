@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { FiMessageCircle, FiSend } from 'react-icons/fi';
+import LinkifyText from '../task/LinkifyText';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -15,14 +17,23 @@ function getDateStr(year, month, day) {
   return `${year}-${String(month + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
 }
 
-export default function MasterCalendar({ month, year, serviceIds = [], cells, isToday, openSidebar }) {
-  const { projects, getTasks, clientTasks, employees, services } = useData();
+export default function MasterCalendar({ month, year, serviceIds = [], cells, isToday }) {
+  const { projects, getTasks, clientTasks, employees, services, addComment } = useData();
   const { currentUser } = useAuth();
   const [sidebarDate, setSidebarDate] = useState(null);
   const [sidebarEntries, setSidebarEntries] = useState([]);
   const [sidebarSelectedProject, setSidebarSelectedProject] = useState(null);
   const [sidebarSelectedTask, setSidebarSelectedTask] = useState(null);
   const [expandedProjects, setExpandedProjects] = useState({});
+  const [statusFilter, setStatusFilter] = useState(null); // filter by status
+  const [openComments, setOpenComments] = useState(false);
+  const [commentText, setCommentText] = useState('');
+
+  const handleSendComment = async (taskId) => {
+    if (!commentText.trim()) return;
+    await addComment(taskId, { authorId: currentUser.id, authorName: currentUser.name, authorRole: currentUser.role, text: commentText.trim() });
+    setCommentText('');
+  };
 
   const getDayEntries = (day) => {
     if (!day) return [];
@@ -34,12 +45,14 @@ export default function MasterCalendar({ month, year, serviceIds = [], cells, is
       if (currentUser?.role === 'employee') allTasks = allTasks.filter(t => t.employeeIds?.includes(currentUser.id));
       if (!allTasks.length) return;
       if (serviceIds?.length) { allTasks = allTasks.filter(t => serviceIds.some(id => (t.serviceIds || []).includes(id))); if (!allTasks.length) return; }
+      if (statusFilter) allTasks = allTasks.filter(t => t.status === statusFilter);
       allTasks.forEach(task => entries.push({ project: p, task }));
     });
     if (clientTasks) {
       let fct = clientTasks.filter(ct => ct.assignedEmployeeId && ct.assignedDate === dateStr);
       if (currentUser?.role === 'employee') fct = fct.filter(ct => ct.assignedEmployeeId === currentUser.id);
       if (serviceIds?.length) fct = fct.filter(ct => serviceIds.includes(ct.serviceId));
+      if (statusFilter) fct = fct.filter(ct => ct.status === statusFilter);
       fct.forEach(ct => entries.push({ project: projects.find(p => p.id === ct.projectId) || { name: 'Client Request' }, task: ct, isClientTask: true }));
     }
     return entries;
@@ -52,7 +65,9 @@ export default function MasterCalendar({ month, year, serviceIds = [], cells, is
     const firstKey = entries[0]?.project?.id || entries[0]?.project?.name;
     setSidebarSelectedProject(firstKey);
     setSidebarSelectedTask(entries[0]?.task || null);
-    setExpandedProjects({});
+    setExpandedProjects({ [firstKey]: true });
+    setOpenComments(false);
+    setCommentText('');
   };
 
   const sidebarProjects = sidebarEntries.reduce((acc, entry) => {
@@ -72,11 +87,17 @@ export default function MasterCalendar({ month, year, serviceIds = [], cells, is
         <h2 className="calendar-title master-view-title">
           <span className="master-badge">★ Master View</span> — {MONTHS[month]} {year}
         </h2>
-        <div className="status-legend">
-          <span className="legend-item"><span className="legend-dot gray" />In Progress</span>
-          <span className="legend-item"><span className="legend-dot yellow" />Ready</span>
-          <span className="legend-item"><span className="legend-dot green" />Completed</span>
-          <span className="legend-item"><span className="legend-dot red" />Not Done</span>
+        <div className={`status-legend ${statusFilter ? 'has-filter' : ''}`}>
+          {Object.entries({ gray: 'In Progress', yellow: 'Ready', green: 'Completed', red: 'Not Done' }).map(([key, label]) => (
+            <span
+              key={key}
+              className={`legend-item ${statusFilter === key ? 'active' : ''}`}
+              onClick={() => setStatusFilter(prev => prev === key ? null : key)}
+              title={`Filter by ${label}`}
+            >
+              <span className={`legend-dot ${key}`} />{label}
+            </span>
+          ))}
         </div>
       </div>
       <div className="calendar-overflow-container">
@@ -121,7 +142,7 @@ export default function MasterCalendar({ month, year, serviceIds = [], cells, is
               <div className="master-sidebar-projects">
                 {Object.entries(sidebarProjects).map(([key, { project, tasks }]) => (
                   <div key={key}>
-                    <div className={`master-sidebar-project-item ${sidebarSelectedProject === key ? 'active' : ''}`} onClick={() => { setSidebarSelectedProject(key); if (tasks.length === 1) setSidebarSelectedTask(tasks[0].task); else setSidebarSelectedTask(null); setExpandedProjects(prev => ({ ...prev, [key]: !prev[key] })); }}>
+                    <div className={`master-sidebar-project-item ${sidebarSelectedProject === key ? 'active' : ''}`} onClick={() => { setSidebarSelectedProject(key); if (tasks.length === 1) { setSidebarSelectedTask(tasks[0].task); setOpenComments(false); setCommentText(''); } else setSidebarSelectedTask(null); setExpandedProjects(prev => ({ ...prev, [key]: !prev[key] })); }}>
                       <span className="sidebar-project-name">{project.name}</span>
                       <span className="sidebar-task-count">{tasks.length}</span>
                       {tasks.length > 1 && <span style={{ marginLeft: 'auto', color: 'var(--text-muted)', fontSize: '0.7rem' }}>{expandedProjects[key] ? '▲' : '▼'}</span>}
@@ -131,7 +152,7 @@ export default function MasterCalendar({ month, year, serviceIds = [], cells, is
                         {tasks.map(({ task, isClientTask }, ti) => {
                           const m = STATUS_META[task.status] || STATUS_META.gray;
                           return (
-                            <div key={task.id || ti} className={`master-sidebar-task-item ${sidebarSelectedTask?.id === task.id ? 'active' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }} onClick={() => { setSidebarSelectedProject(key); setSidebarSelectedTask(task); }}>
+                            <div key={task.id || ti} className={`master-sidebar-task-item ${sidebarSelectedTask?.id === task.id ? 'active' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }} onClick={() => { setSidebarSelectedProject(key); setSidebarSelectedTask(task); setOpenComments(false); setCommentText(''); }}>
                               <span style={{ width: 8, height: 8, borderRadius: '50%', background: m.color, display: 'inline-block', flexShrink: 0 }} />
                               <span>{isClientTask ? '📩 ' : ''}{task.title || '(Untitled)'}</span>
                             </div>
@@ -153,9 +174,44 @@ export default function MasterCalendar({ month, year, serviceIds = [], cells, is
                   return (<>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
                       <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text)', lineHeight: 1.3, flex: 1 }}>{d.title || '(Untitled)'}</div>
-                      <div style={{ flexShrink: 0, marginTop: '2px' }}><span style={{ background: m.color + '22', color: m.color, border: `1.5px solid ${m.color}55`, borderRadius: 99, padding: '0.2rem 0.75rem', fontSize: '0.72rem', fontWeight: 700 }}>{m.label}</span></div>
+                      <div style={{ flexShrink: 0, marginTop: '2px', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        {d.comments !== undefined && (
+                          <button 
+                            onClick={() => setOpenComments(!openComments)}
+                            style={{ 
+                              background: openComments ? 'var(--accent)' : 'var(--bg3)', 
+                              border: openComments ? '1px solid var(--accent)' : '1px solid var(--border)', 
+                              borderRadius: 99, 
+                              padding: '0.2rem 0.75rem', fontSize: '0.72rem', fontWeight: 700, 
+                              color: openComments ? '#fff' : 'var(--text-muted)',
+                              display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            <FiMessageCircle size={12} /> {d.comments?.length || 0} Comments
+                          </button>
+                        )}
+                        <span style={{ background: m.color + '22', color: m.color, border: `1.5px solid ${m.color}55`, borderRadius: 99, padding: '0.2rem 0.75rem', fontSize: '0.72rem', fontWeight: 700 }}>{m.label}</span>
+                      </div>
                     </div>
-                    {d.description && (<div style={{ marginBottom: '1.25rem' }}><div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>Description</div><p style={{ color: 'var(--text)', fontSize: '0.88rem', lineHeight: 1.65, margin: 0, padding: '0.75rem', background: 'var(--bg3)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>{d.description}</p></div>)}
+                    {d.description && (<div style={{ marginBottom: '1.25rem' }}><div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>Description</div><p style={{ color: 'var(--text)', fontSize: '0.88rem', lineHeight: 1.65, margin: 0, padding: '0.75rem', background: 'var(--bg3)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}><LinkifyText text={d.description} /></p></div>)}
+                    {openComments && d.comments !== undefined && (
+                      <div className="comment-thread" style={{ marginBottom: '1.25rem', background: 'var(--bg2)', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.75rem' }}>Comments</div>
+                        {(d.comments || []).length === 0 && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', marginBottom: '0.5rem' }}>No comments yet.</div>}
+                        {(d.comments || []).map(c => (
+                          <div key={c.id} className={`comment-bubble ${c.authorRole === 'client' ? 'cb-client' : 'cb-employee'}`}>
+                            <span className="cb-author">{c.authorName} <em>({c.authorRole})</em></span>
+                            <p className="cb-text"><LinkifyText text={c.text} /></p>
+                            <span className="cb-time">{new Date(c.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                        ))}
+                        <div className="comment-input-row" style={{ marginTop: '0.75rem' }}>
+                          <input type="text" placeholder="Write a message..." value={commentText} onChange={e => setCommentText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleSendComment(d.id); }} />
+                          <button onClick={() => handleSendComment(d.id)}><FiSend size={13} /></button>
+                        </div>
+                      </div>
+                    )}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                       <div style={{ gridColumn: allEmp.length > 2 ? '1 / -1' : 'auto' }}>
                         <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>👤 Assigned To</div>

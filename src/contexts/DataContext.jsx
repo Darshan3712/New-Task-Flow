@@ -5,15 +5,15 @@ import { api } from '../utils/api';
 const DataContext = createContext(null);
 
 export function DataProvider({ children }) {
-  const [projects,     setProjects]     = useState([]);
-  const [employees,    setEmployees]    = useState([]);
-  const [services,     setServices]     = useState([]);
-  const [admins,       setAdmins]       = useState([]);
-  const [clients,      setClients]      = useState([]);
-  const [clientTasks,  setClientTasks]  = useState([]);
-  const [tasks,        setTasks]        = useState({});
+  const [projects, setProjects] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [services, setServices] = useState([]);
+  const [admins, setAdmins] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [clientTasks, setClientTasks] = useState([]);
+  const [tasks, setTasks] = useState({});
   const [systemSettings, setSystemSettings] = useState({ adminCanManageEmployees: true });
-  const [loading,      setLoading]      = useState(true);
+  const [loading, setLoading] = useState(true);
 
   const { currentUser } = useAuth();
 
@@ -116,6 +116,15 @@ export function DataProvider({ children }) {
     }
   }, [currentUser, loadAll]);
 
+  // ── Auto-refresh: poll every 30 seconds while user is logged in ───────────
+  useEffect(() => {
+    if (!currentUser) return;
+    const interval = setInterval(() => {
+      loadAll();
+    }, 30000); // 30,000 ms = 30 seconds
+    return () => clearInterval(interval); // cleanup when user logs out or component unmounts
+  }, [currentUser, loadAll]);
+
   // ── Admins ────────────────────────────────────────────────────────────────
   const addAdmin = async (data) => {
     const admin = await api.createAdmin(data);
@@ -134,7 +143,8 @@ export function DataProvider({ children }) {
 
   // ── Clients ───────────────────────────────────────────────────────────────
   const addClient = async (data) => {
-    const client = await api.createClient(data);
+    const res = await api.createClient(data);
+    const client = res.client || res.user || res;
     setClients(prev => [...prev, client]);
     return client;
   };

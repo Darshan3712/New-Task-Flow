@@ -37,15 +37,39 @@ export default function TaskEntry({
 
   const filteredServices = headerServiceIds.length > 0 ? services.filter(s => headerServiceIds.includes(s.id)) : services;
 
-  // Filter employees by same project only (no service-based filter)
-  const baseEmployees = projectId
+  // Filter employees by project first
+  let baseEmployees = projectId
     ? employees.filter(emp => (emp.assignedProjectIds || []).includes(projectId))
     : employees;
+
+  // If the person assigning is an Employee, only show other employees who share at least one service with them
+  if (currentUser?.role === 'employee') {
+    const me = employees.find(e => e.id === currentUser.id);
+    const myServiceIds = me?.assignedServiceIds || currentUser.assignedServiceIds || [];
+    
+    if (myServiceIds.length > 0) {
+      baseEmployees = baseEmployees.filter(emp =>
+        myServiceIds.some(sid => (emp.assignedServiceIds || []).includes(sid))
+      );
+    }
+  }
+
+  // Then filter by selected task services or header dashboard services
+  if (task.serviceIds && task.serviceIds.length > 0) {
+    baseEmployees = baseEmployees.filter(emp =>
+      task.serviceIds.some(sid => (emp.assignedServiceIds || []).includes(sid))
+    );
+  } else if (headerServiceIds && headerServiceIds.length > 0) {
+    baseEmployees = baseEmployees.filter(emp =>
+      headerServiceIds.some(sid => (emp.assignedServiceIds || []).includes(sid))
+    );
+  }
+
   const isEmployee = currentUser?.role === 'employee';
   const isSenior = currentUser?.isSenior === true;
   const filteredEmployees = (isEmployee && !isSenior) ? baseEmployees.filter(emp => emp.id === currentUser.id) : baseEmployees;
 
-  const getEmpText = () => { const ids = task.employeeIds || []; if (!ids.length) return 'Select Employees'; if (ids.length === 1) { const e = employees.find(em => em.id === ids[0]); return e ? e.name : '1 Employee'; } return `${ids.length} Employees`; };
+  const getEmpText = () => { const ids = task.employeeIds || []; if (!ids.length) return 'Select Employees'; if (ids.length === 1) { if (ids[0] === currentUser?.id) return 'Self'; const e = employees.find(em => em.id === ids[0]); return e ? e.name : '1 Employee'; } return `${ids.length} Employees`; };
   const getSrvText = () => { const ids = task.serviceIds || []; if (!ids.length) return 'Select Services'; if (ids.length === 1) { const s = services.find(sv => sv.id === ids[0]); return s ? s.name : '1 Service'; } return `${ids.length} Services`; };
 
   return (
@@ -118,6 +142,12 @@ export default function TaskEntry({
                 </div>
                 {isEmpOpen && !readOnlyAccess && (
                   <div className="dropdown-menu">
+                    {(currentUser?.role === 'superadmin' || currentUser?.role === 'admin') && (
+                      <label className={`emp-checkbox-item ${task.employeeIds?.includes(currentUser.id) ? 'checked' : ''}`}>
+                        <input type="checkbox" checked={task.employeeIds?.includes(currentUser.id) || false} onChange={() => onToggleEmp(currentUser.id)} onClick={e => e.stopPropagation()} />
+                        <div className="emp-check-info"><div className="emp-check-name">Assign to Self</div><div className="emp-check-user">@{currentUser.name}</div></div>
+                      </label>
+                    )}
                     {filteredEmployees.length === 0 ? (
                       <div className="no-emp-hint">{task.serviceIds?.length ? 'No employees for the selected services.' : headerServiceIds?.length ? 'No employees for the dashboard filter.' : 'No employees available.'}</div>
                     ) : filteredEmployees.map(emp => (
@@ -165,7 +195,7 @@ export default function TaskEntry({
           <div className="status-options-compact">
             {STATUSES.map((s) => (
               <label key={s.value} className={`status-chip status-opt-${s.value} ${task.status === s.value ? 'selected' : ''}`} title={s.label} style={readOnlyAccess ? { pointerEvents: 'none', opacity: task.status === s.value ? 1 : 0.5 } : {}}>
-                <input type="radio" name={`status-${task.id || index}`} value={s.value} checked={task.status === s.value} onChange={() => !readOnlyAccess && updateField('status', s.value)} hidden disabled={readOnlyAccess} />
+                <input type="radio" name={`status-${task.id}`} value={s.value} checked={task.status === s.value} onChange={() => !readOnlyAccess && updateField('status', s.value)} hidden disabled={readOnlyAccess} />
                 <span className="status-emoji">{s.emoji}</span>
                 <span className={`status-dot-mobile color-${s.value}`} />
               </label>

@@ -16,7 +16,7 @@ const STATUS_META = {
   red:    { label: 'Not Done',    color: '#ef4444' },
 };
 
-export default function TaskPopup({ projectId, dateStr, headerServiceIds = [], activeTaskId = null, activeClientTaskId = null, onClose }) {
+export default function TaskPopup({ projectId, dateStr, headerServiceIds = [], activeTaskId = null, activeClientTaskId = null, autoExpandComments = false, onClose }) {
   const { projects, employees, services, clientTasks, saveTasks, getTasks, deleteTasks, updateClientTask, addComment, systemSettings } = useData();
   const { currentUser } = useAuth();
 
@@ -38,7 +38,10 @@ export default function TaskPopup({ projectId, dateStr, headerServiceIds = [], a
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
   const [commentTexts, setCommentTexts] = useState({});
-  const [openClientComments, setOpenClientComments] = useState({});
+  // If autoExpandComments + activeClientTaskId provided, open that task's comments immediately
+  const [openClientComments, setOpenClientComments] = useState(
+    () => autoExpandComments && activeClientTaskId ? { [activeClientTaskId]: true } : {}
+  );
 
   const project = projects.find((p) => p.id === projectId);
   const projectServices = project && project.serviceIds?.length > 0
@@ -64,7 +67,18 @@ export default function TaskPopup({ projectId, dateStr, headerServiceIds = [], a
 
   const handleSave = () => {
     const titled = taskList.filter(t => t.title.trim());
-    if (!titled.length) { setValidationErrors({}); deleteTasks(projectId, dateStr); setMsg('✅ Tasks cleared!'); setTimeout(() => onClose(), 800); return; }
+    if (!titled.length) {
+      setValidationErrors({});
+      if (existingTasks.length > 0) {
+        // There are real saved tasks — do NOT silently delete them.
+        // Require the user to use the explicit "Delete All" button.
+        setMsg('⚠️ Please add a title to save, or use "Delete All" to remove tasks.');
+        return;
+      }
+      // No existing tasks and no titles typed — just close quietly.
+      onClose();
+      return;
+    }
 
     // Validate each titled task has at least one employee AND one service
     const errors = {};
@@ -88,7 +102,23 @@ export default function TaskPopup({ projectId, dateStr, headerServiceIds = [], a
 
   const confirmDelete = () => {
     if (deleteTarget?.type === 'single') removeTask(deleteTarget.index);
-    else if (deleteTarget?.type === 'all') { deleteTasks(projectId, dateStr); onClose(); }
+    else if (deleteTarget?.type === 'all') {
+      const isTaskVisible = (task) => {
+        if (isAdmin || isSuperadmin) return true;
+        if (!task.title) return true;
+        if (task.employeeIds?.includes(currentUser.id)) return true;
+        const e = employees.find(x => x.id === currentUser.id);
+        const myServiceIds = e?.assignedServiceIds || currentUser.assignedServiceIds || [];
+        return task.serviceIds?.some(sid => myServiceIds.includes(sid));
+      };
+      const hiddenTasks = taskList.filter(t => !isTaskVisible(t));
+      if (hiddenTasks.length === 0) {
+        deleteTasks(projectId, dateStr);
+      } else {
+        saveTasks(projectId, dateStr, hiddenTasks);
+      }
+      onClose();
+    }
     setDeleteTarget(null);
   };
 
@@ -118,10 +148,22 @@ export default function TaskPopup({ projectId, dateStr, headerServiceIds = [], a
           </div>
 
           <div className="popup-body scrollable-body">
-            {!activeClientTaskId && taskList.filter((task) => !activeTaskId || task.id === activeTaskId).map((task) => {
+            {!activeClientTaskId && taskList
+              .filter(task => !activeTaskId || task.id === activeTaskId)
+              .filter(task => {
+                if (isAdmin || isSuperadmin) return true;
+                if (!task.title) return true;
+                // Always show tasks that are still being created (no employees AND no services assigned yet)
+                if (!task.employeeIds?.length && !task.serviceIds?.length) return true;
+                if (task.employeeIds?.includes(currentUser.id)) return true;
+                const e = employees.find(x => x.id === currentUser.id);
+                const myServiceIds = e?.assignedServiceIds || currentUser.assignedServiceIds || [];
+                return task.serviceIds?.some(sid => myServiceIds.includes(sid));
+              })
+              .map((task, renderIndex, renderedArr) => {
               const originalIndex = taskList.findIndex(t => t.id === task.id);
               return (
-                <TaskEntry key={task.id || originalIndex} task={task} index={originalIndex} employees={employees} services={projectServices} updateField={(f, v) => { updateTaskField(originalIndex, f, v); setValidationErrors(prev => { const n = {...prev}; delete n[task.id]; return n; }); }} onToggleEmp={(id) => { toggleEmployee(originalIndex, id); setValidationErrors(prev => { const n = {...prev}; if (n[task.id]) delete n[task.id].missingEmp; if (n[task.id] && !n[task.id].missingSrv) delete n[task.id]; return n; }); }} onToggleSrv={(id) => { toggleService(originalIndex, id); setValidationErrors(prev => { const n = {...prev}; if (n[task.id]) delete n[task.id].missingSrv; if (n[task.id] && !n[task.id].missingEmp) delete n[task.id]; return n; }); }} onRemove={() => setDeleteTarget({ type: 'single', index: originalIndex, name: `Task ${originalIndex + 1}` })} headerServiceIds={headerServiceIds} isLast={originalIndex === taskList.length - 1} showRemove={!empPerms.readOnlyAccess} isActive={activeTaskId === task.id} readOnlyAccess={empPerms.readOnlyAccess} projectId={projectId} empError={!!validationErrors[task.id]?.missingEmp} srvError={!!validationErrors[task.id]?.missingSrv} />
+                <TaskEntry key={task.id || originalIndex} task={task} index={renderIndex} employees={employees} services={projectServices} updateField={(f, v) => { updateTaskField(originalIndex, f, v); setValidationErrors(prev => { const n = {...prev}; delete n[task.id]; return n; }); }} onToggleEmp={(id) => { toggleEmployee(originalIndex, id); setValidationErrors(prev => { const n = {...prev}; if (n[task.id]) delete n[task.id].missingEmp; if (n[task.id] && !n[task.id].missingSrv) delete n[task.id]; return n; }); }} onToggleSrv={(id) => { toggleService(originalIndex, id); setValidationErrors(prev => { const n = {...prev}; if (n[task.id]) delete n[task.id].missingSrv; if (n[task.id] && !n[task.id].missingEmp) delete n[task.id]; return n; }); }} onRemove={() => setDeleteTarget({ type: 'single', index: originalIndex, name: `Task ${renderIndex + 1}` })} headerServiceIds={headerServiceIds} isLast={renderIndex === renderedArr.length - 1} showRemove={!empPerms.readOnlyAccess} isActive={activeTaskId === task.id} readOnlyAccess={empPerms.readOnlyAccess} projectId={projectId} empError={!!validationErrors[task.id]?.missingEmp} srvError={!!validationErrors[task.id]?.missingSrv} />
               );
             })}
 
@@ -136,7 +178,7 @@ export default function TaskPopup({ projectId, dateStr, headerServiceIds = [], a
                   <span className="crs-count">{visibleClientTasks.length}</span>
                 </div>
                 {visibleClientTasks.map(ct => {
-                  const assignedEmp = employees.find(e => e.id === ct.assignedEmployeeId);
+                  const assignedEmp = employees.find(e => e.id === ct.assignedEmployeeId) || (ct.assignedEmployeeId === currentUser?.id ? currentUser : null);
                   const assignedSvc = services.find(s => s.id === ct.serviceId);
                   const m = STATUS_META[ct.status] || STATUS_META.gray;
                   return (

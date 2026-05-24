@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import TaskPopup from '../task/TaskPopup';
@@ -31,12 +31,24 @@ function getOverallStatus(tasks) {
   return 'green';
 }
 
-export default function Calendar({ projectId, month, year, serviceIds = [], isMasterView = false }) {
+export default function Calendar({ projectId, month, year, serviceIds = [], isMasterView = false, deepLink = null, onDeepLinkConsumed }) {
   const { projects, getTasks, clientTasks } = useData();
   const { currentUser } = useAuth();
   const [selectedDate, setSelectedDate] = useState(null);
   const [activeTaskId, setActiveTaskId] = useState(null);
   const [activeClientTaskId, setActiveClientTaskId] = useState(null);
+  const [statusFilter, setStatusFilter] = useState(null); // 'gray', 'yellow', 'green', 'red'
+
+  // ── Auto-open TaskPopup when a deepLink comes in from the notification panel ──
+  useEffect(() => {
+    if (deepLink?.clientTaskId && deepLink?.dateStr) {
+      setSelectedDate(deepLink.dateStr);
+      setActiveClientTaskId(deepLink.clientTaskId);
+      setActiveTaskId(null);
+      onDeepLinkConsumed?.();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLink?.clientTaskId, deepLink?.dateStr]);
 
   const cells = buildCells(year, month);
   const today = new Date();
@@ -53,6 +65,7 @@ export default function Calendar({ projectId, month, year, serviceIds = [], isMa
     let all = getTasks(projectId, getDateStr(year, month, day));
     if (currentUser?.role === 'employee') all = all.filter(t => t.employeeIds?.includes(currentUser.id));
     if (serviceIds?.length) all = all.filter(t => serviceIds.some(id => (t.serviceIds || []).includes(id)));
+    if (statusFilter) all = all.filter(t => t.status === statusFilter);
     return all;
   };
 
@@ -65,6 +78,7 @@ export default function Calendar({ projectId, month, year, serviceIds = [], isMa
       if (ct.projectId !== projectId) return false;
       if (currentUser?.role === 'employee' && ct.assignedEmployeeId !== currentUser.id) return false;
       if (serviceIds?.length && !serviceIds.includes(ct.serviceId)) return false;
+      if (statusFilter && ct.status !== statusFilter) return false;
       return true;
     });
   };
@@ -73,11 +87,17 @@ export default function Calendar({ projectId, month, year, serviceIds = [], isMa
     <div className="calendar-wrapper">
       <div className="calendar-title-bar">
         <h2 className="calendar-title">{project?.name} — {MONTHS[month]} {year}</h2>
-        <div className="status-legend">
-          <span className="legend-item"><span className="legend-dot gray" />In Progress</span>
-          <span className="legend-item"><span className="legend-dot yellow" />Ready</span>
-          <span className="legend-item"><span className="legend-dot green" />Completed</span>
-          <span className="legend-item"><span className="legend-dot red" />Not Done</span>
+        <div className={`status-legend ${statusFilter ? 'has-filter' : ''}`}>
+          {Object.entries({ gray: 'In Progress', yellow: 'Ready', green: 'Completed', red: 'Not Done' }).map(([key, label]) => (
+            <span
+              key={key}
+              className={`legend-item ${statusFilter === key ? 'active' : ''}`}
+              onClick={() => setStatusFilter(prev => prev === key ? null : key)}
+              title={`Filter by ${label}`}
+            >
+              <span className={`legend-dot ${key}`} />{label}
+            </span>
+          ))}
         </div>
       </div>
 
@@ -91,7 +111,11 @@ export default function Calendar({ projectId, month, year, serviceIds = [], isMa
             const isMultiTask = totalItems >= 2;
             const overallStatus = getOverallStatus(dayTasks);
             return (
-              <div key={idx} className={`cal-cell ${!day ? 'cal-cell-empty' : 'cal-cell-active'} ${isToday(day) ? 'cal-today' : ''} ${isMultiTask ? 'multi-task-cell' : ''} ${(!isMultiTask && overallStatus) ? `status-${overallStatus}` : ''}`} onClick={() => day && setSelectedDate(getDateStr(year, month, day))}>
+              <div
+                key={idx}
+                className={`cal-cell ${!day ? 'cal-cell-empty' : 'cal-cell-active'} ${isToday(day) ? 'cal-today' : ''} ${isMultiTask ? 'multi-task-cell' : ''} ${(!isMultiTask && overallStatus) ? `status-${overallStatus}` : ''}`}
+                onClick={() => day && setSelectedDate(getDateStr(year, month, day))}
+              >
                 {day && (<>
                   <span className="day-num">{day}</span>
                   <div className="day-tasks-container">
@@ -102,7 +126,12 @@ export default function Calendar({ projectId, month, year, serviceIds = [], isMa
                       </div>
                     ))}
                     {dayClientTasks.map((ct) => (
-                      <div key={`ct-${ct.id}`} className="day-task-entry day-client-task-entry" title={`📩 Client: ${ct.title}`} onClick={(e) => { e.stopPropagation(); setSelectedDate(getDateStr(year, month, day)); setActiveClientTaskId(ct.id); setActiveTaskId(null); }}>
+                      <div
+                        key={`ct-${ct.id}`}
+                        className={`day-task-entry day-client-task-entry${activeClientTaskId === ct.id ? ' day-client-task-active' : ''}`}
+                        title={`📩 Client: ${ct.title}`}
+                        onClick={(e) => { e.stopPropagation(); setSelectedDate(getDateStr(year, month, day)); setActiveClientTaskId(ct.id); setActiveTaskId(null); }}
+                      >
                         <span className={`day-status-dot status-dot-${ct.status} inline-status-dot`} />
                         <span className="day-task-title">📩 {ct.title}</span>
                       </div>
@@ -116,7 +145,15 @@ export default function Calendar({ projectId, month, year, serviceIds = [], isMa
       </div>
 
       {selectedDate && (
-        <TaskPopup projectId={projectId} dateStr={selectedDate} headerServiceIds={serviceIds} activeTaskId={activeTaskId} activeClientTaskId={activeClientTaskId} onClose={() => { setSelectedDate(null); setActiveTaskId(null); setActiveClientTaskId(null); }} />
+        <TaskPopup
+          projectId={projectId}
+          dateStr={selectedDate}
+          headerServiceIds={serviceIds}
+          activeTaskId={activeTaskId}
+          activeClientTaskId={activeClientTaskId}
+          autoExpandComments={!!activeClientTaskId}
+          onClose={() => { setSelectedDate(null); setActiveTaskId(null); setActiveClientTaskId(null); }}
+        />
       )}
     </div>
   );

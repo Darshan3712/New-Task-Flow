@@ -8,7 +8,7 @@ import LogoutConfirmModal from './LogoutConfirmModal';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-export default function Header({ onSearch }) {
+export default function Header({ onSearch, onNavigateToTask }) {
   const { currentUser, logout } = useAuth();
   const { projects, services, clientTasks } = useData();
   const navigate = useNavigate();
@@ -116,7 +116,7 @@ export default function Header({ onSearch }) {
         </div>
       </header>
 
-      {showNotifPanel && <NotificationPanel onClose={() => setShowNotifPanel(false)} />}
+      {showNotifPanel && <NotificationPanel onClose={() => setShowNotifPanel(false)} onNavigateToTask={(task) => { setShowNotifPanel(false); onNavigateToTask && onNavigateToTask(task); }} />}
       {showLogoutConfirm && <LogoutConfirmModal onCancel={() => setShowLogoutConfirm(false)} onConfirm={confirmLogout} />}
     </>
   );

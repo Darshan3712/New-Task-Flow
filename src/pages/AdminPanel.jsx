@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
-import { FiArrowLeft, FiBriefcase, FiUsers, FiLayers, FiShield, FiUserCheck } from 'react-icons/fi';
+import { FiArrowLeft, FiBriefcase, FiUsers, FiLayers, FiShield, FiUserCheck, FiLogOut } from 'react-icons/fi';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import ProjectsTab  from '../components/admin/ProjectsTab';
 import EmployeesTab from '../components/admin/EmployeesTab';
@@ -12,7 +12,7 @@ import ClientsTab   from '../components/admin/ClientsTab';
 import SettingsTab  from '../components/admin/SettingsTab';
 
 export default function AdminPanel() {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const isSA = currentUser?.role === 'superadmin';
 
@@ -64,7 +64,15 @@ export default function AdminPanel() {
         <div className="admin-user-center">
           <h2 className="admin-user-name">{currentUser?.name}</h2>
         </div>
-        <div className="header-right-spacer" />
+        <div className="header-right-spacer">
+          <button 
+            className="btn-admin-logout" 
+            onClick={() => { logout(); navigate('/login'); }} 
+            title="Logout"
+          >
+            <FiLogOut /> Logout
+          </button>
+        </div>
       </div>
 
       <div className="admin-tabs">

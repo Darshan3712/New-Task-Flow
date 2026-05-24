@@ -13,6 +13,8 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   const [searchParams, setSearchParams] = useState(null);
+  // deepLink: { clientTaskId, dateStr } — set when user clicks a comment in notification panel
+  const [deepLink, setDeepLink] = useState(null);
 
   // Client gets their own portal — no calendar
   if (currentUser?.role === 'client') {
@@ -21,13 +23,28 @@ export default function DashboardPage() {
 
   const handleSearch = ({ projectId, month, year, serviceIds, isMasterView }) => {
     setSearchParams({ projectId, month, year, serviceIds, isMasterView });
+    setDeepLink(null); // clear deepLink on manual search
+  };
+
+  // Called from NotificationPanel when a comment card is clicked
+  const handleNavigateToTask = (clientTask) => {
+    if (!clientTask?.projectId || !clientTask?.assignedDate) return;
+    const d = new Date(clientTask.assignedDate);
+    setSearchParams({
+      projectId: clientTask.projectId,
+      month: d.getMonth(),
+      year: d.getFullYear(),
+      serviceIds: [],
+      isMasterView: false,
+    });
+    setDeepLink({ clientTaskId: clientTask.id, dateStr: clientTask.assignedDate });
   };
 
   const today = new Date();
 
   return (
     <div className="dashboard-page">
-      <Header onSearch={handleSearch} />
+      <Header onSearch={handleSearch} onNavigateToTask={handleNavigateToTask} />
 
       <main className="dashboard-main">
         {!searchParams ? (
@@ -53,6 +70,8 @@ export default function DashboardPage() {
             year={searchParams.year}
             serviceIds={searchParams.serviceIds}
             isMasterView={searchParams.isMasterView}
+            deepLink={deepLink}
+            onDeepLinkConsumed={() => setDeepLink(null)}
           />
         )}
       </main>

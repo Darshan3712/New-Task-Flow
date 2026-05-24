@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
-import { FiPlus, FiClock, FiCalendar, FiChevronDown } from 'react-icons/fi';
+import { FiPlus, FiClock, FiCalendar, FiChevronDown, FiLogOut, FiTrash2 } from 'react-icons/fi';
 import ClientTaskForm from '../components/client/ClientTaskForm';
 import ClientCommentPopup from '../components/client/ClientCommentPopup';
 import LogoutConfirmModal from '../components/header/LogoutConfirmModal';
@@ -17,7 +17,7 @@ const MONTHS = ['January','February','March','April','May','June','July','August
 
 export default function ClientPortal() {
   const { currentUser, logout } = useAuth();
-  const { projects, employees, clientTasks, addClientTask, addComment } = useData();
+  const { projects, employees, clientTasks, addClientTask, addComment, updateClientTask } = useData();
 
   const myProject = projects.find(p => p.id === currentUser?.projectId);
   const now = new Date();
@@ -47,8 +47,9 @@ export default function ClientPortal() {
   const [commentText, setCommentText] = useState('');
   const liveSelectedTask = selectedTask ? clientTasks.find(t => t.id === selectedTask.id) || selectedTask : null;
 
-  // ── Logout ──────────────────────────────────────────────────────────────────
+  // ── Logout & Delete Modals ──────────────────────────────────────────────────
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState(null);
 
   const handleCreateTask = async (e) => {
     e.preventDefault();
@@ -71,6 +72,7 @@ export default function ClientPortal() {
   for (let y = now.getFullYear() - 3; y <= now.getFullYear() + 3; y++) years.push(y);
 
   const filteredClientTasks = clientTasks.filter(task => {
+    if (task.status === 'cancelled') return false;
     const d = task.createdAt ? new Date(task.createdAt) : new Date();
     return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear && (selectedStatus === 'all' || task.status === selectedStatus);
   });
@@ -78,7 +80,16 @@ export default function ClientPortal() {
   return (
     <div className="client-portal">
       <header className="app-header">
-        <div className="header-left"><div className="header-logo"><img src={`${import.meta.env.BASE_URL}New_Logo.png`} alt="TaskFlow" className="app-main-logo" /></div></div>
+        <div className="header-left">
+          <div className="header-logo">
+            <img src={`${import.meta.env.BASE_URL}New_Logo.png`} alt="TaskFlow" className="app-main-logo" />
+          </div>
+          <div className="mobile-actions">
+            <button className="btn-mobile-nav" onClick={() => setShowLogoutConfirm(true)} title="Logout">
+              <FiLogOut size={18} />
+            </button>
+          </div>
+        </div>
         <div className="header-center">
           <div className="header-row-2" style={{ justifyContent: 'center', width: '100%' }}>
             <div className="header-control" ref={statusDropdownRef}>
@@ -118,7 +129,9 @@ export default function ClientPortal() {
         </div>
         <div className="header-right">
           <span style={{ color: '#fff', fontWeight: 600, fontSize: '0.95rem' }}>{myProject ? myProject.name : 'No Project Assigned'}</span>
-          <button className="btn-admin-panel" onClick={() => setShowLogoutConfirm(true)}>Logout</button>
+          <button className="btn-admin-logout" onClick={() => setShowLogoutConfirm(true)}>
+            <FiLogOut size={18} style={{ marginRight: '0.4rem' }} /> Logout
+          </button>
         </div>
       </header>
 
@@ -154,8 +167,16 @@ export default function ClientPortal() {
                       {task.requiredBy && <span className="ctc-meta-item"><FiCalendar size={12} /> Required by: <strong>{new Date(task.requiredBy).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</strong></span>}
                       {assignedEmp && <span className="ctc-meta-item">👤 Assigned to: <strong>{assignedEmp.name}</strong></span>}
                     </div>
-                    <div className="ctc-footer">
+                    <div className="ctc-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span className="ctc-click-hint">💬 {task.comments?.length > 0 ? `${task.comments.length} Comment${task.comments.length > 1 ? 's' : ''}` : 'Click to view & comment'}</span>
+                      <button 
+                        className="btn-delete-task"
+                        onClick={(e) => { e.stopPropagation(); setTaskToDelete(task); }}
+                        style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0.25rem', borderRadius: '4px' }}
+                        title="Delete Task"
+                      >
+                        <FiTrash2 size={16} />
+                      </button>
                     </div>
                   </div>
                 );
@@ -167,6 +188,25 @@ export default function ClientPortal() {
 
       {liveSelectedTask && <ClientCommentPopup task={liveSelectedTask} employees={employees} commentText={commentText} setCommentText={setCommentText} onSend={handleSendComment} onClose={() => { setSelectedTask(null); setCommentText(''); }} />}
       {showLogoutConfirm && <LogoutConfirmModal onCancel={() => setShowLogoutConfirm(false)} onConfirm={() => { setShowLogoutConfirm(false); logout(); window.location.href = import.meta.env.BASE_URL + 'login'; }} />}
+      
+      {taskToDelete && (
+        <div className="popup-overlay" onClick={() => setTaskToDelete(null)}>
+          <div className="popup-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '360px', textAlign: 'center', padding: '1.5rem' }}>
+            <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text)' }}>Confirm Deletion</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+              Are you sure you want to delete this task? This cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <button onClick={() => setTaskToDelete(null)} style={{ padding: '0.5rem 1.5rem', borderRadius: '6px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer', fontWeight: 600, flex: 1 }}>
+                Cancel
+              </button>
+              <button onClick={() => { updateClientTask(taskToDelete.id, { status: 'cancelled' }); setTaskToDelete(null); }} style={{ padding: '0.5rem 1.5rem', borderRadius: '6px', background: '#e11d48', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, flex: 1 }}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

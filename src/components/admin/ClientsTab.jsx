@@ -30,15 +30,19 @@ export default function ClientsTab({ clients, projects, addClient, updateClient,
       setTimeout(() => setClientMsg(''), 3000);
       return;
     }
-    await addClient({
-      name: clientName.trim(),
-      projectId: clientProjectId,
-      username: clientUsername.trim(),
-      password: clientPassword.trim(),
-    });
-    setClientName(''); setClientProjectId('');
-    setClientUsername(''); setClientPassword('');
-    setClientMsg('✅ Client created successfully!');
+    try {
+      await addClient({
+        name: clientName.trim(),
+        projectId: clientProjectId,
+        username: clientUsername.trim(),
+        password: clientPassword.trim(),
+      });
+      setClientName(''); setClientProjectId('');
+      setClientUsername(''); setClientPassword('');
+      setClientMsg('✅ Client created successfully!');
+    } catch (err) {
+      setClientMsg(`❌ Failed to create client: ${err.message || 'Unknown error'}`);
+    }
     setTimeout(() => setClientMsg(''), 3000);
   };
 
@@ -52,9 +56,13 @@ export default function ClientsTab({ clients, projects, addClient, updateClient,
     });
   };
 
-  const handleSaveEdit = (id) => {
-    updateClient(id, clientEditData);
-    setEditingClientId(null);
+  const handleSaveEdit = async (id) => {
+    try {
+      await updateClient(id, clientEditData);
+      setEditingClientId(null);
+    } catch (err) {
+      alert(`❌ Failed to update client: ${err.message || 'Unknown error'}`);
+    }
   };
 
   const handleCopy = (text, id) => {

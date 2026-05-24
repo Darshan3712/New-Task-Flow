@@ -23,3 +23,8 @@ backend/
 *.njsproj
 *.sln
 *.sw?
+
+# Environment and zip archives
+.env
+dist.zip
+
