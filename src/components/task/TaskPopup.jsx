@@ -51,7 +51,20 @@ export default function TaskPopup({ projectId, dateStr, headerServiceIds = [], a
   const [yr, mo, dy] = dateStr.split('-');
   const displayDate = `${Number(dy)} ${MONTHS_FULL[Number(mo) - 1]} ${yr}`;
 
-  const newBlankTask = () => ({ id: uuidv4(), title: '', description: '', employeeIds: [], serviceIds: [], status: 'gray' });
+  const currentEmp = isEmp ? employees.find(x => x.id === currentUser.id) : null;
+  const isSeniorEmp = isEmp && (currentEmp?.isSenior === true || currentUser?.isSenior === true);
+
+  const newBlankTask = () => ({
+    id: uuidv4(),
+    title: '',
+    description: '',
+    employeeIds: (isEmp && !isSeniorEmp) ? [currentUser.id] : [],
+    serviceIds: [],
+    status: 'gray',
+    assignedByName: currentUser?.name || '',
+    assignedById: currentUser?.id || '',
+    assignedByRole: currentUser?.role || '',
+  });
   const addTask = () => setTaskList([...taskList, newBlankTask()]);
 
   const updateTaskField = (index, field, value) => { const n = [...taskList]; n[index] = { ...n[index], [field]: value }; setTaskList(n); };
@@ -95,7 +108,15 @@ export default function TaskPopup({ projectId, dateStr, headerServiceIds = [], a
     }
 
     setValidationErrors({});
-    saveTasks(projectId, dateStr, titled.map(t => ({ ...t, title: t.title.trim(), description: t.description.trim(), updatedAt: new Date().toISOString() })));
+    saveTasks(projectId, dateStr, titled.map(t => ({
+      ...t,
+      title: t.title.trim(),
+      description: t.description.trim(),
+      updatedAt: new Date().toISOString(),
+      assignedByName: t.assignedByName || currentUser?.name || '',
+      assignedById: t.assignedById || currentUser?.id || '',
+      assignedByRole: t.assignedByRole || currentUser?.role || '',
+    })));
     setMsg('✅ Tasks saved!');
     setTimeout(() => onClose(), 800);
   };

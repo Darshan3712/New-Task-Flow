@@ -31,7 +31,7 @@ function getOverallStatus(tasks) {
   return 'green';
 }
 
-export default function Calendar({ projectId, month, year, serviceIds = [], isMasterView = false, deepLink = null, onDeepLinkConsumed }) {
+export default function Calendar({ projectId, month, year, serviceIds = [], isMasterView = false, employeeId = null, deepLink = null, onDeepLinkConsumed }) {
   const { projects, getTasks, clientTasks } = useData();
   const { currentUser } = useAuth();
   const [selectedDate, setSelectedDate] = useState(null);
@@ -55,7 +55,7 @@ export default function Calendar({ projectId, month, year, serviceIds = [], isMa
   const isToday = (day) => day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
 
   if (isMasterView) {
-    return <MasterCalendar month={month} year={year} serviceIds={serviceIds} cells={cells} isToday={isToday} />;
+    return <MasterCalendar month={month} year={year} serviceIds={serviceIds} employeeId={employeeId} cells={cells} isToday={isToday} />;
   }
 
   const project = projects.find((p) => p.id === projectId);
@@ -63,7 +63,11 @@ export default function Calendar({ projectId, month, year, serviceIds = [], isMa
   const getDayTasks = (day) => {
     if (!day) return [];
     let all = getTasks(projectId, getDateStr(year, month, day));
-    if (currentUser?.role === 'employee') all = all.filter(t => t.employeeIds?.includes(currentUser.id));
+    if (currentUser?.role === 'employee') {
+      all = all.filter(t => t.employeeIds?.includes(currentUser.id));
+    } else if (employeeId) {
+      all = all.filter(t => t.employeeIds?.includes(employeeId));
+    }
     if (serviceIds?.length) all = all.filter(t => serviceIds.some(id => (t.serviceIds || []).includes(id)));
     if (statusFilter) all = all.filter(t => t.status === statusFilter);
     return all;
@@ -76,7 +80,11 @@ export default function Calendar({ projectId, month, year, serviceIds = [], isMa
       if (!ct.assignedEmployeeId) return false;
       if (ct.assignedDate !== dateStr) return false;
       if (ct.projectId !== projectId) return false;
-      if (currentUser?.role === 'employee' && ct.assignedEmployeeId !== currentUser.id) return false;
+      if (currentUser?.role === 'employee') {
+        if (ct.assignedEmployeeId !== currentUser.id) return false;
+      } else if (employeeId) {
+        if (ct.assignedEmployeeId !== employeeId) return false;
+      }
       if (serviceIds?.length && !serviceIds.includes(ct.serviceId)) return false;
       if (statusFilter && ct.status !== statusFilter) return false;
       return true;

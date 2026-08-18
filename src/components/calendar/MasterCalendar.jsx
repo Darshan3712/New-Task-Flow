@@ -3,6 +3,7 @@ import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { FiMessageCircle, FiSend } from 'react-icons/fi';
 import LinkifyText from '../task/LinkifyText';
+import { getTaskAssigner } from '../../utils/taskUtils';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -17,8 +18,8 @@ function getDateStr(year, month, day) {
   return `${year}-${String(month + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
 }
 
-export default function MasterCalendar({ month, year, serviceIds = [], cells, isToday }) {
-  const { projects, getTasks, clientTasks, employees, services, addComment } = useData();
+export default function MasterCalendar({ month, year, serviceIds = [], employeeId = null, cells, isToday }) {
+  const { projects, getTasks, clientTasks, employees, services, admins, addComment } = useData();
   const { currentUser } = useAuth();
   const [sidebarDate, setSidebarDate] = useState(null);
   const [sidebarEntries, setSidebarEntries] = useState([]);
@@ -42,7 +43,11 @@ export default function MasterCalendar({ month, year, serviceIds = [], cells, is
     projects.forEach(p => {
       let allTasks = getTasks(p.id, dateStr);
       if (!allTasks?.length) return;
-      if (currentUser?.role === 'employee') allTasks = allTasks.filter(t => t.employeeIds?.includes(currentUser.id));
+      if (currentUser?.role === 'employee') {
+        allTasks = allTasks.filter(t => t.employeeIds?.includes(currentUser.id));
+      } else if (employeeId) {
+        allTasks = allTasks.filter(t => t.employeeIds?.includes(employeeId));
+      }
       if (!allTasks.length) return;
       if (serviceIds?.length) { allTasks = allTasks.filter(t => serviceIds.some(id => (t.serviceIds || []).includes(id))); if (!allTasks.length) return; }
       if (statusFilter) allTasks = allTasks.filter(t => t.status === statusFilter);
@@ -50,7 +55,11 @@ export default function MasterCalendar({ month, year, serviceIds = [], cells, is
     });
     if (clientTasks) {
       let fct = clientTasks.filter(ct => ct.assignedEmployeeId && ct.assignedDate === dateStr);
-      if (currentUser?.role === 'employee') fct = fct.filter(ct => ct.assignedEmployeeId === currentUser.id);
+      if (currentUser?.role === 'employee') {
+        fct = fct.filter(ct => ct.assignedEmployeeId === currentUser.id);
+      } else if (employeeId) {
+        fct = fct.filter(ct => ct.assignedEmployeeId === employeeId);
+      }
       if (serviceIds?.length) fct = fct.filter(ct => serviceIds.includes(ct.serviceId));
       if (statusFilter) fct = fct.filter(ct => ct.status === statusFilter);
       fct.forEach(ct => entries.push({ project: projects.find(p => p.id === ct.projectId) || { name: 'Client Request' }, task: ct, isClientTask: true }));
@@ -171,6 +180,7 @@ export default function MasterCalendar({ month, year, serviceIds = [], cells, is
                   const svcNames = (d.serviceIds || []).map(id => services.find(s => s.id === id)?.name).filter(Boolean);
                   const allEmp = d.assignedEmployeeId ? [employees.find(e => e.id === d.assignedEmployeeId)?.name].filter(Boolean) : empNames;
                   const allSvc = d.serviceId ? [services.find(s => s.id === d.serviceId)?.name].filter(Boolean) : svcNames;
+                  const assignerName = getTaskAssigner(d, employees, admins);
                   return (<>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
                       <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text)', lineHeight: 1.3, flex: 1 }}>{d.title || '(Untitled)'}</div>
@@ -220,6 +230,12 @@ export default function MasterCalendar({ month, year, serviceIds = [], cells, is
                       <div style={{ gridColumn: allSvc.length > 2 ? '1 / -1' : 'auto' }}>
                         <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>📋 Services</div>
                         {allSvc.length > 0 ? <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>{allSvc.map((name, i) => <span key={i} style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', borderRadius: '6px', padding: '0.25rem 0.6rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent)' }}>{name}</span>)}</div> : <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem', fontStyle: 'italic' }}>No service</span>}
+                      </div>
+                      <div style={{ gridColumn: '1 / -1', marginTop: '0.15rem' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>✍ Assigned By</div>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.3rem 0.75rem', fontSize: '0.82rem', fontWeight: 600, color: 'var(--accent)' }}>
+                          👤 {assignerName}
+                        </span>
                       </div>
                       {(d.requiredBy || d.assignedDate) && (
                         <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', paddingTop: '0.75rem', borderTop: '1px solid var(--border)' }}>

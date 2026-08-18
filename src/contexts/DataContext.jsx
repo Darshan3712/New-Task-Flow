@@ -178,6 +178,8 @@ export function DataProvider({ children }) {
       assignedEmployeeId: employeeId,
       serviceId: serviceId || null,
       assignedDate: assignedDate || null,
+      assignedByName: currentUser?.name || 'Admin',
+      assignedById: currentUser?.id || '',
     };
     const updated = await api.updateClientTask(taskId, fields);
     setClientTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updated } : t));

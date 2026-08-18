@@ -21,8 +21,8 @@ export default function DashboardPage() {
     return <ClientPortal />;
   }
 
-  const handleSearch = ({ projectId, month, year, serviceIds, isMasterView }) => {
-    setSearchParams({ projectId, month, year, serviceIds, isMasterView });
+  const handleSearch = ({ projectId, month, year, serviceIds, isMasterView, employeeId }) => {
+    setSearchParams({ projectId, month, year, serviceIds, isMasterView, employeeId });
     setDeepLink(null); // clear deepLink on manual search
   };
 
@@ -36,6 +36,7 @@ export default function DashboardPage() {
       year: d.getFullYear(),
       serviceIds: [],
       isMasterView: false,
+      employeeId: null,
     });
     setDeepLink({ clientTaskId: clientTask.id, dateStr: clientTask.assignedDate });
   };
@@ -70,6 +71,7 @@ export default function DashboardPage() {
             year={searchParams.year}
             serviceIds={searchParams.serviceIds}
             isMasterView={searchParams.isMasterView}
+            employeeId={searchParams.employeeId}
             deepLink={deepLink}
             onDeepLinkConsumed={() => setDeepLink(null)}
           />

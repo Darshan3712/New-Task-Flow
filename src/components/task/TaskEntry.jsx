@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { FiTrash2 } from 'react-icons/fi';
 import LinkifyText from './LinkifyText';
+import { getTaskAssigner } from '../../utils/taskUtils';
 
 const STATUSES = [
   { value: 'gray',   label: 'In Progress', emoji: '⚫' },
@@ -66,16 +67,24 @@ export default function TaskEntry({
   }
 
   const isEmployee = currentUser?.role === 'employee';
-  const isSenior = currentUser?.isSenior === true;
+  const me = isEmployee ? employees.find(e => e.id === currentUser.id) : null;
+  const isSenior = (me?.isSenior === true) || (currentUser?.isSenior === true);
   const filteredEmployees = (isEmployee && !isSenior) ? baseEmployees.filter(emp => emp.id === currentUser.id) : baseEmployees;
 
   const getEmpText = () => { const ids = task.employeeIds || []; if (!ids.length) return 'Select Employees'; if (ids.length === 1) { if (ids[0] === currentUser?.id) return 'Self'; const e = employees.find(em => em.id === ids[0]); return e ? e.name : '1 Employee'; } return `${ids.length} Employees`; };
   const getSrvText = () => { const ids = task.serviceIds || []; if (!ids.length) return 'Select Services'; if (ids.length === 1) { const s = services.find(sv => sv.id === ids[0]); return s ? s.name : '1 Service'; } return `${ids.length} Services`; };
 
+  const assignedByText = getTaskAssigner(task, employees);
+
   return (
     <div className={`task-entry-item ${isActive ? 'task-focused' : ''}`} ref={entryRef}>
       <div className="task-entry-header">
-        <span className="task-number">Task {index + 1}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+          <span className="task-number">Task {index + 1}</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', background: 'var(--bg3)', border: '1px solid var(--border)', padding: '0.15rem 0.55rem', borderRadius: '6px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+            <span>✍ Assigned by:</span> <strong style={{ color: 'var(--accent)' }}>{assignedByText}</strong>
+          </span>
+        </div>
         {showRemove && <button className="btn-remove-entry" onClick={onRemove} title="Remove Task"><FiTrash2 size={16} /></button>}
       </div>
       <div className="task-entry-content">
