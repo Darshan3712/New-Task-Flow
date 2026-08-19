@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
-import { FiLogOut, FiSettings, FiBell, FiInbox } from 'react-icons/fi';
-import NotificationPanel from '../notification/NotificationPanel';
+import { FiLogOut, FiSettings, FiInbox } from 'react-icons/fi';
 import ClientRequestsPanel from '../client/ClientRequestsPanel';
 import LogoutConfirmModal from './LogoutConfirmModal';
 
@@ -14,7 +13,6 @@ export default function Header({ onSearch, onNavigateToTask }) {
   const { projects, services, employees, clientTasks } = useData();
   const navigate = useNavigate();
 
-  const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [showClientRequests, setShowClientRequests] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -106,41 +104,31 @@ export default function Header({ onSearch, onNavigateToTask }) {
           {/* Mobile actions */}
           <div className="mobile-actions">
             {isAdminRole && (<>
-              {isSuperAdmin && (
-                <button className="btn-mobile-nav" onClick={() => setShowClientRequests(v => !v)} title="Client Requests" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', position: 'relative' }}>
-                  <FiInbox size={18} />
-                  {totalClientTasks > 0 && <span className="notif-dot" style={{ width: '14px', height: '14px', fontSize: '0.6rem' }}>{totalClientTasks > 99 ? '99+' : totalClientTasks}</span>}
-                </button>
-              )}
-              <div className="notif-bell-wrapper" style={{ marginRight: '0.5rem' }}>
-                <button className="notif-bell-btn" onClick={() => setShowNotifPanel(v => !v)} title="Client Task Requests" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff' }}>
-                  <FiBell size={18} />
-                  {unassignedCount > 0 && <span className="notif-dot" style={{ width: '14px', height: '14px', fontSize: '0.6rem' }}>{unassignedCount > 99 ? '99+' : unassignedCount}</span>}
-                </button>
-              </div>
+              <button className="btn-mobile-nav" onClick={() => setShowClientRequests(v => !v)} title="Client Task Requests" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', position: 'relative' }}>
+                <FiInbox size={18} />
+                {unassignedCount > 0 ? (
+                  <span className="notif-dot" style={{ width: '14px', height: '14px', fontSize: '0.6rem', background: '#ef4444' }}>{unassignedCount > 99 ? '99+' : unassignedCount}</span>
+                ) : totalClientTasks > 0 ? (
+                  <span className="notif-dot" style={{ width: '14px', height: '14px', fontSize: '0.6rem' }}>{totalClientTasks > 99 ? '99+' : totalClientTasks}</span>
+                ) : null}
+              </button>
               <button className="btn-mobile-nav" onClick={() => navigate('/admin')} title="Admin Panel"><FiSettings size={18} /></button>
             </>)}
             <button className="btn-mobile-nav" onClick={() => setShowLogoutConfirm(true)} title="Logout"><FiLogOut size={18} /></button>
           </div>
 
           <div className="header-row1-right">
-            {/* Client Requests button (SuperAdmin only) */}
-            {isSuperAdmin && (
-              <button className="btn-client-requests" onClick={() => setShowClientRequests(v => !v)} title="Client Requests">
-                <FiInbox size={16} />
-                <span className="btn-cr-text">Client Requests</span>
-                {totalClientTasks > 0 && <span className="btn-cr-badge">{totalClientTasks > 99 ? '99+' : totalClientTasks}</span>}
-              </button>
-            )}
-
-            {/* Notification bell */}
+            {/* Client Task Requests button (SuperAdmin and Admin) */}
             {isAdminRole && (
-              <div className="notif-bell-wrapper">
-                <button className="notif-bell-btn" onClick={() => setShowNotifPanel(v => !v)} title="Client Task Requests">
-                  <FiBell size={20} />
-                  {unassignedCount > 0 && <span className="notif-dot">{unassignedCount > 99 ? '99+' : unassignedCount}</span>}
-                </button>
-              </div>
+              <button className="btn-client-requests" onClick={() => setShowClientRequests(v => !v)} title="Client Task Requests">
+                <FiInbox size={16} />
+                <span className="btn-cr-text">Client Task Requests</span>
+                {unassignedCount > 0 ? (
+                  <span className="btn-cr-badge" style={{ background: '#ef4444' }}>{unassignedCount > 99 ? '99+' : unassignedCount}</span>
+                ) : totalClientTasks > 0 ? (
+                  <span className="btn-cr-badge">{totalClientTasks > 99 ? '99+' : totalClientTasks}</span>
+                ) : null}
+              </button>
             )}
 
             {/* Admin Panel */}
@@ -226,8 +214,15 @@ export default function Header({ onSearch, onNavigateToTask }) {
         </div>
       </header>
 
-      {showNotifPanel && <NotificationPanel onClose={() => setShowNotifPanel(false)} onNavigateToTask={(task) => { setShowNotifPanel(false); onNavigateToTask && onNavigateToTask(task); }} />}
-      {showClientRequests && <ClientRequestsPanel onClose={() => setShowClientRequests(false)} />}
+      {showClientRequests && (
+        <ClientRequestsPanel
+          onClose={() => setShowClientRequests(false)}
+          onNavigateToTask={(task) => {
+            setShowClientRequests(false);
+            onNavigateToTask && onNavigateToTask(task);
+          }}
+        />
+      )}
       {showLogoutConfirm && <LogoutConfirmModal onCancel={() => setShowLogoutConfirm(false)} onConfirm={confirmLogout} />}
     </>
   );

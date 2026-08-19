@@ -97,7 +97,7 @@ export default function MasterCalendar({ month, year, serviceIds = [], employeeI
           <span className="master-badge">★ Master View</span> — {MONTHS[month]} {year}
         </h2>
         <div className={`status-legend ${statusFilter ? 'has-filter' : ''}`}>
-          {Object.entries({ gray: 'In Progress', yellow: 'Ready', green: 'Completed', red: 'Not Done' }).map(([key, label]) => (
+          {Object.entries({ gray: 'Pending', yellow: 'In Progress', green: 'Completed', red: 'Not Done' }).map(([key, label]) => (
             <span
               key={key}
               className={`legend-item ${statusFilter === key ? 'active' : ''}`}
@@ -222,23 +222,48 @@ export default function MasterCalendar({ month, year, serviceIds = [], employeeI
                         </div>
                       </div>
                     )}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                      <div style={{ gridColumn: allEmp.length > 2 ? '1 / -1' : 'auto' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '1rem', marginTop: '0.25rem' }}>
+                      <div>
                         <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>👤 Assigned To</div>
-                        {allEmp.length > 0 ? <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>{allEmp.map((name, i) => <span key={i} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.25rem 0.6rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text)' }}>{name}</span>)}</div> : <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem', fontStyle: 'italic' }}>Unassigned</span>}
+                        {allEmp.length > 0 ? (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                            {allEmp.map((name, i) => (
+                              <span key={i} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.25rem 0.6rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text)' }}>
+                                {name}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem', fontStyle: 'italic' }}>Unassigned</span>
+                        )}
                       </div>
-                      <div style={{ gridColumn: allSvc.length > 2 ? '1 / -1' : 'auto' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>📋 Services</div>
-                        {allSvc.length > 0 ? <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>{allSvc.map((name, i) => <span key={i} style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', borderRadius: '6px', padding: '0.25rem 0.6rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent)' }}>{name}</span>)}</div> : <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem', fontStyle: 'italic' }}>No service</span>}
-                      </div>
-                      <div style={{ gridColumn: '1 / -1', marginTop: '0.15rem' }}>
+
+                      <div>
                         <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>✍ Assigned By</div>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.3rem 0.75rem', fontSize: '0.82rem', fontWeight: 600, color: 'var(--accent)' }}>
-                          👤 {assignerName}
-                        </span>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.25rem 0.6rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent)' }}>
+                            👤 {assignerName}
+                          </span>
+                        </div>
                       </div>
-                      {(d.requiredBy || d.assignedDate) && (
-                        <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', paddingTop: '0.75rem', borderTop: '1px solid var(--border)' }}>
+
+                      <div>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>📋 Services</div>
+                        {allSvc.length > 0 ? (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                            {allSvc.map((name, i) => (
+                              <span key={i} style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', borderRadius: '6px', padding: '0.25rem 0.6rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent)' }}>
+                                {name}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem', fontStyle: 'italic' }}>No service</span>
+                        )}
+                      </div>
+
+                      {(d.requiredBy || d.assignedDate || d.createdAt) && (
+                        <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', paddingTop: '0.75rem', borderTop: '1px solid var(--border)', marginTop: '0.5rem' }}>
                           {d.assignedDate && <div><div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem' }}>🗓 Assigned For</div><div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>{new Date(d.assignedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div></div>}
                           {d.requiredBy && <div><div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem' }}>📅 Required By</div><div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>{new Date(d.requiredBy).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div></div>}
                           {d.createdAt && <div><div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem' }}>📌 Submitted On</div><div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>{new Date(d.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div></div>}

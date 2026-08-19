@@ -96,7 +96,7 @@ export default function Calendar({ projectId, month, year, serviceIds = [], isMa
       <div className="calendar-title-bar">
         <h2 className="calendar-title">{project?.name} — {MONTHS[month]} {year}</h2>
         <div className={`status-legend ${statusFilter ? 'has-filter' : ''}`}>
-          {Object.entries({ gray: 'In Progress', yellow: 'Ready', green: 'Completed', red: 'Not Done' }).map(([key, label]) => (
+          {Object.entries({ gray: 'Pending', yellow: 'In Progress', green: 'Completed', red: 'Not Done' }).map(([key, label]) => (
             <span
               key={key}
               className={`legend-item ${statusFilter === key ? 'active' : ''}`}

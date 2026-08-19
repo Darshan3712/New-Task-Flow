@@ -5,6 +5,7 @@ import { FiPlus, FiClock, FiCalendar, FiChevronDown, FiLogOut, FiTrash2 } from '
 import ClientTaskForm from '../components/client/ClientTaskForm';
 import ClientCommentPopup from '../components/client/ClientCommentPopup';
 import LogoutConfirmModal from '../components/header/LogoutConfirmModal';
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 
 const STATUS_META = {
   gray:   { label: 'Pending',     color: '#6b7280' },
@@ -189,24 +190,17 @@ export default function ClientPortal() {
       {liveSelectedTask && <ClientCommentPopup task={liveSelectedTask} employees={employees} commentText={commentText} setCommentText={setCommentText} onSend={handleSendComment} onClose={() => { setSelectedTask(null); setCommentText(''); }} />}
       {showLogoutConfirm && <LogoutConfirmModal onCancel={() => setShowLogoutConfirm(false)} onConfirm={() => { setShowLogoutConfirm(false); logout(); window.location.href = import.meta.env.BASE_URL + 'login'; }} />}
       
-      {taskToDelete && (
-        <div className="popup-overlay" onClick={() => setTaskToDelete(null)}>
-          <div className="popup-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '360px', textAlign: 'center', padding: '1.5rem' }}>
-            <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text)' }}>Confirm Deletion</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-              Are you sure you want to delete this task? This cannot be undone.
-            </p>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-              <button onClick={() => setTaskToDelete(null)} style={{ padding: '0.5rem 1.5rem', borderRadius: '6px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer', fontWeight: 600, flex: 1 }}>
-                Cancel
-              </button>
-              <button onClick={() => { updateClientTask(taskToDelete.id, { status: 'cancelled' }); setTaskToDelete(null); }} style={{ padding: '0.5rem 1.5rem', borderRadius: '6px', background: '#e11d48', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, flex: 1 }}>
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDeleteModal
+        isOpen={!!taskToDelete}
+        onClose={() => setTaskToDelete(null)}
+        onConfirm={() => {
+          if (taskToDelete) {
+            updateClientTask(taskToDelete.id, { status: 'cancelled' });
+            setTaskToDelete(null);
+          }
+        }}
+        itemName={taskToDelete ? `task request "${taskToDelete.title}"` : 'this task'}
+      />
     </div>
   );
 }

@@ -5,8 +5,8 @@ import LinkifyText from './LinkifyText';
 import { getTaskAssigner } from '../../utils/taskUtils';
 
 const STATUSES = [
-  { value: 'gray',   label: 'In Progress', emoji: '⚫' },
-  { value: 'yellow', label: 'Ready',       emoji: '🟡' },
+  { value: 'gray',   label: 'Pending',     emoji: '⚫' },
+  { value: 'yellow', label: 'In Progress', emoji: '🟡' },
   { value: 'green',  label: 'Completed',   emoji: '🟢' },
   { value: 'red',    label: 'Not Done',    emoji: '🔴' },
 ];
